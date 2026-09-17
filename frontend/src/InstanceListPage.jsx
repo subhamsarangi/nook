@@ -21,7 +21,7 @@ export default function InstanceListPage({ subEntity, entity, entityId, subEntit
 
   useEffect(() => {
     loadInstances();
-  }, [subEntity?.id]);
+  }, [subEntity?.id, subEntity?.listItemConfig]);
 
   const loadInstances = async () => {
     setLoading(true);
@@ -207,6 +207,19 @@ export default function InstanceListPage({ subEntity, entity, entityId, subEntit
       return <span style={{ color: '#ccc' }}>—</span>;
     }
 
+    // Find field type in schema
+    const field = schema?.find((f) => f.name === fieldName);
+
+    if (field?.type === 'image') {
+      return (
+        <img
+          src={`${apiUrl}/api/files/${value}`}
+          alt={fieldName}
+          style={{ maxWidth: '100px', maxHeight: '50px', borderRadius: '4px' }}
+        />
+      );
+    }
+
     if (typeof value === 'boolean') {
       return value ? '✓' : '✗';
     }
@@ -217,6 +230,17 @@ export default function InstanceListPage({ subEntity, entity, entityId, subEntit
 
     const str = String(value);
     return str.length > 50 ? str.substring(0, 50) + '...' : str;
+  };
+
+  const getConfiguredFields = () => {
+    if (subEntity?.listItemConfig) {
+      const config = typeof subEntity.listItemConfig === 'string' 
+        ? JSON.parse(subEntity.listItemConfig) 
+        : subEntity.listItemConfig;
+      return config.fields || [];
+    }
+    // Default: show first 2 fields from schema
+    return schema.slice(0, 2).map((f) => f.name);
   };
 
   if (loading) {
@@ -365,8 +389,9 @@ export default function InstanceListPage({ subEntity, entity, entityId, subEntit
                   />
                 </th>
                 <th>ID</th>
-                <th>Data</th>
-                <th>Created</th>
+                {getConfiguredFields().map((fieldName) => (
+                  <th key={fieldName}>{fieldName}</th>
+                ))}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -388,15 +413,11 @@ export default function InstanceListPage({ subEntity, entity, entityId, subEntit
                       {instance.id.substring(0, 8)}...
                     </Link>
                   </td>
-                  <td className="cell-data">
-                    {Object.entries(instance.data)
-                      .slice(0, 2)
-                      .map(([key, val]) => `${key}: ${renderFieldValue(val, key)}`)
-                      .join(' • ')}
-                  </td>
-                  <td className="cell-timestamp">
-                    {new Date(instance.createdAt).toLocaleDateString()}
-                  </td>
+                  {getConfiguredFields().map((fieldName) => (
+                    <td key={fieldName} className="cell-data">
+                      {renderFieldValue(instance.data[fieldName], fieldName)}
+                    </td>
+                  ))}
                   <td className="cell-actions">
                     <button
                       className="btn-link"

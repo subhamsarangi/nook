@@ -128,11 +128,11 @@ Note: 8.1 can technically be stubbed/built in parallel with Phase 6–7, then wi
 
 ## Phase 9 — Custom Display Control
 
-- [ ] 9.1 List-item display config builder (fields shown in row, title field, color-as-title-paint, order)
-- [ ] 9.2 Detail-view display config builder (ordered field blocks for instance detail page)
-- [ ] 9.3 Wire instance list page to use `list_item_config` (replaces 6.4 default rendering)
-- [ ] 9.4 Wire instance detail page to use `detail_view_config` (replaces 6.5 default rendering)
-- [ ] 9.5 Drag-to-reorder for both configs
+- [x] 9.1 List-item display config builder (fields shown in row, title field, color-as-title-paint, order) — backend routes added, UI component created (DisplayConfigBuilder.jsx), wired into EntityDetailPage
+- [x] 9.2 Detail-view display config builder (ordered field blocks for instance detail page)
+- [x] 9.3 Wire instance list page to use `list_item_config` (replaces 6.4 default rendering)
+- [x] 9.4 Wire instance detail page to use `detail_view_config` (replaces 6.5 default rendering)
+- [x] 9.5 Drag-to-reorder for both configs (built into DisplayConfigBuilder component)
 
 **Depends on:** 6.4 → 9.1 → 9.3; 6.5 → 9.2 → 9.4; (9.1, 9.2, 9.3, 9.4) → 9.5
 Note: this phase is the most parallelizable relative to Phase 6–8 — it just needs *some* default rendering to exist first (from Phase 6), so it can build alongside Phase 7–8 rather than strictly after.

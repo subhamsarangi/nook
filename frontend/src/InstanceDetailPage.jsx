@@ -16,7 +16,7 @@ export default function InstanceDetailPage({ instance, subEntity, entity, entity
     if (!instanceData) {
       loadInstance();
     }
-  }, []);
+  }, [subEntity?.detailViewConfig]);
 
   const loadInstance = async () => {
     if (instanceData) return; // Already loaded from props
@@ -160,6 +160,18 @@ export default function InstanceDetailPage({ instance, subEntity, entity, entity
     fieldMap[f.name] = f;
   });
 
+  const getOrderedFields = () => {
+    if (subEntity?.detailViewConfig) {
+      const config = typeof subEntity.detailViewConfig === 'string' 
+        ? JSON.parse(subEntity.detailViewConfig) 
+        : subEntity.detailViewConfig;
+      if (config.fields && Array.isArray(config.fields)) {
+        return config.fields.map((name) => fieldMap[name]).filter(Boolean);
+      }
+    }
+    return schema;
+  };
+
   const getFileCount = () => {
     if (!instanceData || !instanceData.data || !Array.isArray(schema)) return 0;
     let count = 0;
@@ -237,7 +249,7 @@ export default function InstanceDetailPage({ instance, subEntity, entity, entity
         </div>
 
         <div className="fields-container">
-          {schema.map((field) => (
+          {getOrderedFields().map((field) => (
             <div key={field.name} className="field-block">
               <div className="field-header">
                 <h3>

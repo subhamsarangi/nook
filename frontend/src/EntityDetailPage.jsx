@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SchemaBuilder from './SchemaBuilder';
+import DisplayConfigBuilder from './DisplayConfigBuilder';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './EntityDetailPage.css';
 
@@ -22,6 +23,9 @@ export default function EntityDetailPage({ entityId, onBack }) {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkCascadeInfo, setBulkCascadeInfo] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedSubEntityForConfig, setSelectedSubEntityForConfig] = useState(null);
+  const [configMode, setConfigMode] = useState(null); // null | 'list' | 'detail'
+  const [savingConfig, setSavingConfig] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
   const navigate = useNavigate();
@@ -179,6 +183,58 @@ export default function EntityDetailPage({ entityId, onBack }) {
     loadData();
   };
 
+  const handleSaveListConfig = async (config) => {
+    setSavingConfig(true);
+    try {
+      const res = await fetch(
+        `${apiUrl}/api/sub-entities/${selectedSubEntityForConfig.id}/list-item-config`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Save failed');
+      }
+
+      setSelectedSubEntityForConfig(null);
+      setConfigMode(null);
+      loadData();
+    } catch (err) {
+      setError('Config save failed: ' + err.message);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleSaveDetailConfig = async (config) => {
+    setSavingConfig(true);
+    try {
+      const res = await fetch(
+        `${apiUrl}/api/sub-entities/${selectedSubEntityForConfig.id}/detail-view-config`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Save failed');
+      }
+
+      setSelectedSubEntityForConfig(null);
+      setConfigMode(null);
+      loadData();
+    } catch (err) {
+      setError('Config save failed: ' + err.message);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
   const toggleSelectSubEntity = (subEntityId) => {
     const newSelected = new Set(selectedSubEntityIds);
     if (newSelected.has(subEntityId)) {
@@ -259,6 +315,52 @@ export default function EntityDetailPage({ entityId, onBack }) {
 
   if (!entity) {
     return <div className="error-banner">Entity not found</div>;
+  }
+
+  // If configuring display for a sub-entity, show config builder
+  if (selectedSubEntityForConfig && configMode) {
+    return (
+      <div className="entity-detail-page">
+        <div className="page-header">
+          <div>
+            <h1>{entity.name}</h1>
+            <p className="breadcrumb">
+              <a onClick={() => navigate(`/entities/${entityId}`)}>← Back to {entity.name}</a>
+            </p>
+          </div>
+        </div>
+
+        <DisplayConfigBuilder
+          schema={
+            selectedSubEntityForConfig.schema
+              ? typeof selectedSubEntityForConfig.schema === 'string'
+                ? JSON.parse(selectedSubEntityForConfig.schema)
+                : selectedSubEntityForConfig.schema
+              : []
+          }
+          currentConfig={
+            configMode === 'list'
+              ? selectedSubEntityForConfig.listItemConfig
+                ? typeof selectedSubEntityForConfig.listItemConfig === 'string'
+                  ? JSON.parse(selectedSubEntityForConfig.listItemConfig)
+                  : selectedSubEntityForConfig.listItemConfig
+                : null
+              : selectedSubEntityForConfig.detailViewConfig
+              ? typeof selectedSubEntityForConfig.detailViewConfig === 'string'
+                ? JSON.parse(selectedSubEntityForConfig.detailViewConfig)
+                : selectedSubEntityForConfig.detailViewConfig
+              : null
+          }
+          title={configMode === 'list' ? 'Configure List Display' : 'Configure Detail View'}
+          onSave={configMode === 'list' ? handleSaveListConfig : handleSaveDetailConfig}
+          onCancel={() => {
+            setSelectedSubEntityForConfig(null);
+            setConfigMode(null);
+          }}
+          isSaving={savingConfig}
+        />
+      </div>
+    );
   }
 
   // If editing schema for a sub-entity, show schema builder
@@ -435,6 +537,28 @@ export default function EntityDetailPage({ entityId, onBack }) {
                   <button className="btn-link" onClick={() => handleEditSchema(sub)}>
                     Schema
                   </button>
+                  {sub.schemaFinalized && (
+                    <>
+                      <button
+                        className="btn-link"
+                        onClick={() => {
+                          setSelectedSubEntityForConfig(sub);
+                          setConfigMode('list');
+                        }}
+                      >
+                        List Config
+                      </button>
+                      <button
+                        className="btn-link"
+                        onClick={() => {
+                          setSelectedSubEntityForConfig(sub);
+                          setConfigMode('detail');
+                        }}
+                      >
+                        Detail Config
+                      </button>
+                    </>
+                  )}
                   <button className="btn-link" onClick={() => handleEdit(sub)}>
                     Edit
                   </button>

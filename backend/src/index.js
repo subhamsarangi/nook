@@ -381,7 +381,31 @@ app.post('/api/sub-entities/:id/finalize-schema', async (req, res) => {
   handleFinalizeSchema(req, res, db, key, DB_PATH);
 });
 
-// Instance endpoints
+// Display config endpoints
+app.put('/api/sub-entities/:id/list-item-config', async (req, res) => {
+  const { handleUpdateListItemConfig } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleUpdateListItemConfig(req, res, db, key, DB_PATH);
+});
+
+app.put('/api/sub-entities/:id/detail-view-config', async (req, res) => {
+  const { handleUpdateDetailViewConfig } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleUpdateDetailViewConfig(req, res, db, key, DB_PATH);
+});
+
 app.post('/api/sub-entities/:subEntityId/instances', async (req, res) => {
   const { handleCreateInstance } = await import('./instances.js');
   const db = getDatabase();

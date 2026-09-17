@@ -432,3 +432,84 @@ export async function handleFinalizeSchema(req, res, db, key, dbPath) {
     res.status(500).json({ error: 'Finalize failed' });
   }
 }
+
+
+/**
+ * API: PUT /api/sub-entities/:id/list-item-config (update list item display config)
+ */
+export async function handleUpdateListItemConfig(req, res, db, key, dbPath) {
+  try {
+    const { id } = req.params;
+    const { config } = req.body;
+
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ error: 'Config required' });
+    }
+
+    const subEntity = getSubEntity(db, id);
+    if (!subEntity) {
+      return res.status(404).json({ error: 'Sub-entity not found' });
+    }
+
+    const sql = `
+      UPDATE sub_entities
+      SET listItemConfig = ?, updatedAt = ?
+      WHERE id = ?
+    `;
+
+    const now = new Date().toISOString();
+    db.run(sql, [JSON.stringify(config), now, id]);
+
+    // Persist DB to disk
+    if (key && dbPath) {
+      const { writeEncryptedDatabase } = await import('./database.js');
+      writeEncryptedDatabase(dbPath, db, key);
+    }
+
+    const updated = getSubEntity(db, id);
+    res.json(updated);
+  } catch (err) {
+    console.error('[sub-entities] list config update failed:', err.message);
+    res.status(500).json({ error: 'List config update failed' });
+  }
+}
+
+/**
+ * API: PUT /api/sub-entities/:id/detail-view-config (update detail view display config)
+ */
+export async function handleUpdateDetailViewConfig(req, res, db, key, dbPath) {
+  try {
+    const { id } = req.params;
+    const { config } = req.body;
+
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ error: 'Config required' });
+    }
+
+    const subEntity = getSubEntity(db, id);
+    if (!subEntity) {
+      return res.status(404).json({ error: 'Sub-entity not found' });
+    }
+
+    const sql = `
+      UPDATE sub_entities
+      SET detailViewConfig = ?, updatedAt = ?
+      WHERE id = ?
+    `;
+
+    const now = new Date().toISOString();
+    db.run(sql, [JSON.stringify(config), now, id]);
+
+    // Persist DB to disk
+    if (key && dbPath) {
+      const { writeEncryptedDatabase } = await import('./database.js');
+      writeEncryptedDatabase(dbPath, db, key);
+    }
+
+    const updated = getSubEntity(db, id);
+    res.json(updated);
+  } catch (err) {
+    console.error('[sub-entities] detail config update failed:', err.message);
+    res.status(500).json({ error: 'Detail config update failed' });
+  }
+}
