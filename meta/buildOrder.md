@@ -8,8 +8,8 @@ progress as you build.
 
 ## Phase 1 — Foundation
 
-- [ ] 1.1 Scaffold project: Node/Express backend + React frontend as separate processes
-- [ ] 1.2 Set up repo structure, env config, dev scripts (run both processes together)
+- [x] 1.1 Scaffold project: Node/Express backend + React frontend as separate processes
+- [x] 1.2 Set up repo structure, env config, dev scripts (run both processes together)
 
 > Blocks: everything else.
 
@@ -22,23 +22,23 @@ progress as you build.
 > password means the vault is permanently unreadable — this is intentional,
 > keeps the design simple, and avoids a second key-wrapping path to secure/leak.
 
-- [ ] 2.1 Password → key derivation (Argon2id, random salt)
-- [ ] 2.2 Plaintext `vault.meta.json` to hold salt + KDF params + metadata (non-secret)
-- [ ] 2.3 Encrypted verifier pattern (encrypt known constant with derived key; store ciphertext)
+- [x] 2.1 Password → key derivation (Argon2id, random salt)
+- [x] 2.2 Plaintext `vault.meta.json` to hold salt + KDF params + metadata (non-secret)
+- [x] 2.3 Encrypted verifier pattern (encrypt known constant with derived key; store ciphertext)
       → lets you validate a password without ever storing it
-- [ ] 2.3a Constant-time comparison (`crypto.timingSafeEqual`) for verifier check — never a plain `===`/string compare, to avoid timing side-channels
-- [ ] 2.4 Atomic-write helper (temp file → fsync → rename) for anything persisted to disk
+- [x] 2.3a Constant-time comparison (`crypto.timingSafeEqual`) for verifier check — never a plain `===`/string compare, to avoid timing side-channels
+- [x] 2.4 Atomic-write helper (temp file → fsync → rename) for anything persisted to disk
       *(soft dependency — good to have before Phase 2.5, not a hard blocker)*
-- [ ] 2.5 Wire up SQLCipher (or chosen DB-encryption approach) for the SQLite DB
-- [ ] 2.6 End-to-end check: boot → prompt password → verify → unlock → connect to empty DB
-- [ ] 2.7 In-memory session/key holder on server (key never touches disk)
+- [x] 2.5 Wire up SQLCipher (or chosen DB-encryption approach) for the SQLite DB
+- [x] 2.6 End-to-end check: boot → prompt password → verify → unlock → connect to empty DB
+- [x] 2.7 In-memory session/key holder on server (key never touches disk)
       - Use `Buffer` (not JS string) for password/key material where possible
       - Explicitly zero (`buffer.fill(0)`) the buffer once no longer needed
-- [ ] 2.8 15-minute auto-lock timer (server-side, drops key from memory, zeroes buffer)
-- [ ] 2.9 `/session/status` endpoint (remaining time, locked/unlocked state)
-- [ ] 2.10 **Persisted failed-attempt tracking**: store failed-unlock count + last-attempt timestamp in `vault.meta.json` (plaintext, non-secret — just a counter)
+- [x] 2.8 15-minute auto-lock timer (server-side, drops key from memory, zeroes buffer)
+- [x] 2.9 `/session/status` endpoint (remaining time, locked/unlocked state)
+- [x] 2.10 **Persisted failed-attempt tracking**: store failed-unlock count + last-attempt timestamp in `vault.meta.json` (plaintext, non-secret — just a counter)
       → must survive server restarts, so an attacker can't reset backoff by restarting the dev server
-- [ ] 2.11 Exponential backoff on unlock attempts, driven by 2.10's persisted count (e.g. 1s, 2s, 4s, 8s...), enforced server-side regardless of frontend state
+- [x] 2.11 Exponential backoff on unlock attempts, driven by 2.10's persisted count (e.g. 1s, 2s, 4s, 8s...), enforced server-side regardless of frontend state
 
 **Depends on:** Phase 1
 **Chain:** 2.1 → 2.2 → 2.3 → 2.3a → 2.5 → 2.6 → 2.7 → 2.8 → 2.9 → 2.10 → 2.11 (2.4 parallel-safe)
