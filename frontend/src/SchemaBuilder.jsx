@@ -173,29 +173,33 @@ export default function SchemaBuilder({ subEntity, onSchemaSaved, onCancel, apiU
               </div>
 
               <div className="field-actions">
-                <button
-                  className="btn-icon"
-                  onClick={() => handleMoveField(idx, 'up')}
-                  disabled={idx === 0}
-                  title="Move up"
-                >
-                  ↑
-                </button>
-                <button
-                  className="btn-icon"
-                  onClick={() => handleMoveField(idx, 'down')}
-                  disabled={idx === schema.length - 1}
-                  title="Move down"
-                >
-                  ↓
-                </button>
-                <button
-                  className="btn-icon danger"
-                  onClick={() => handleRemoveField(idx)}
-                  title="Delete field"
-                >
-                  🗑️
-                </button>
+                {!subEntity?.schemaFinalized && (
+                  <>
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleMoveField(idx, 'up')}
+                      disabled={idx === 0}
+                      title="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleMoveField(idx, 'down')}
+                      disabled={idx === schema.length - 1}
+                      title="Move down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      className="btn-icon danger"
+                      onClick={() => handleRemoveField(idx)}
+                      title="Delete field"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
