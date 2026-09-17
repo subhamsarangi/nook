@@ -15,6 +15,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [cascadeInfo, setCascadeInfo] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
   const [displayMode, setDisplayMode] = useState('list'); // 'list' or 'gallery' stub
   const [selectedSubEntityForSchema, setSelectedSubEntityForSchema] = useState(null);
   const [selectedSubEntityIds, setSelectedSubEntityIds] = useState(new Set());
@@ -106,14 +107,19 @@ export default function EntityDetailPage({ entityId, onBack }) {
   };
 
   const handleDeleteClick = async (id) => {
+    setDeleteError('');
     setDeleteConfirm(id);
+    setCascadeInfo(null);
     setDeleting(true);
     try {
       const res = await fetch(`${apiUrl}/api/sub-entities/${id}/cascade-count`);
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to load delete info');
+      }
       setCascadeInfo(data);
     } catch (err) {
-      setError('Failed to load delete info: ' + err.message);
+      setDeleteError('Failed to load delete info: ' + err.message);
     } finally {
       setDeleting(false);
     }
@@ -140,9 +146,10 @@ export default function EntityDetailPage({ entityId, onBack }) {
 
       setDeleteConfirm(null);
       setCascadeInfo(null);
+      setDeleteError('');
       await loadData();
     } catch (err) {
-      setError('Delete failed: ' + err.message);
+      setDeleteError('Delete failed: ' + err.message);
     } finally {
       setDeleting(false);
     }
@@ -336,6 +343,8 @@ export default function EntityDetailPage({ entityId, onBack }) {
                   type="button"
                   className="btn-danger"
                   onClick={() => handleDeleteClick(editingId)}
+                  disabled={subEntities.length <= 1}
+                  title={subEntities.length <= 1 ? 'An entity must have at least one sub-entity' : 'Delete sub-entity'}
                 >
                   🗑️ Delete
                 </button>
@@ -366,10 +375,12 @@ export default function EntityDetailPage({ entityId, onBack }) {
         itemName={subEntities.find((s) => s.id === deleteConfirm)?.name}
         cascadeInfo={cascadeInfo}
         loading={deleting}
+        error={deleteError}
         onConfirm={handleConfirmDelete}
         onCancel={() => {
           setDeleteConfirm(null);
           setCascadeInfo(null);
+          setDeleteError('');
         }}
       />
 
@@ -383,7 +394,12 @@ export default function EntityDetailPage({ entityId, onBack }) {
           {selectedSubEntityIds.size > 0 && (
             <div className="bulk-action-bar">
               <p>{selectedSubEntityIds.size} selected</p>
-              <button className="btn-danger" onClick={handleBulkDeleteSubEntitiesClick}>
+              <button
+                className="btn-danger"
+                onClick={handleBulkDeleteSubEntitiesClick}
+                disabled={selectedSubEntityIds.size >= subEntities.length}
+                title={selectedSubEntityIds.size >= subEntities.length ? 'An entity must have at least one sub-entity' : 'Delete selected sub-entities'}
+              >
                 🗑️ Delete Selected
               </button>
             </div>

@@ -249,6 +249,12 @@
   background: #c0392b !important;
 }
 
+.btn-danger:disabled {
+  background: #d1d5db !important;
+  color: #6b7280 !important;
+  cursor: not-allowed;
+}
+
 .btn-link {
   background: transparent;
   color: #667eea;

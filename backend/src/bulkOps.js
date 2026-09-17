@@ -2,8 +2,8 @@
  * Bulk operations: create instances from JSON, validate against schema, transaction.
  */
 
-import { getSubEntity } from './subEntities.js';
-import { createInstance } from './instances.js';
+import { getSubEntity } from "./subEntities.js";
+import { createInstance } from "./instances.js";
 
 /**
  * Validate instance data against schema
@@ -16,7 +16,10 @@ function validateInstanceAgainstSchema(data, schema) {
     const value = data[field.name];
 
     // Check required fields
-    if (field.required && (value === null || value === undefined || value === '')) {
+    if (
+      field.required &&
+      (value === null || value === undefined || value === "")
+    ) {
       errors.push(`${field.name} is required`);
       return;
     }
@@ -25,37 +28,39 @@ function validateInstanceAgainstSchema(data, schema) {
     if (!value) return;
 
     // Basic type validation (avoid import, use simple checks)
-    if (field.type === 'short_text' || field.type === 'long_text') {
-      if (typeof value !== 'string') {
+    if (field.type === "short_text" || field.type === "long_text") {
+      if (typeof value !== "string") {
         errors.push(`${field.name} must be text`);
       }
-    } else if (field.type === 'date') {
+    } else if (field.type === "date") {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         errors.push(`${field.name} must be YYYY-MM-DD format`);
       }
-    } else if (field.type === 'time') {
+    } else if (field.type === "time") {
       if (!/^\d{2}:\d{2}(:\d{2})?$/.test(value)) {
         errors.push(`${field.name} must be HH:MM or HH:MM:SS format`);
       }
-    } else if (field.type === 'datetime') {
+    } else if (field.type === "datetime") {
       if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/.test(value)) {
         errors.push(`${field.name} must be ISO 8601 datetime`);
       }
-    } else if (field.type === 'url') {
+    } else if (field.type === "url") {
       try {
         new URL(value);
       } catch {
         errors.push(`${field.name} must be valid URL`);
       }
-    } else if (field.type === 'dropdown') {
+    } else if (field.type === "dropdown") {
       if (field.options && !field.options.includes(value)) {
-        errors.push(`${field.name} must be one of: ${field.options.join(', ')}`);
+        errors.push(
+          `${field.name} must be one of: ${field.options.join(", ")}`,
+        );
       }
-    } else if (field.type === 'checkbox') {
-      if (typeof value !== 'boolean') {
+    } else if (field.type === "checkbox") {
+      if (typeof value !== "boolean") {
         errors.push(`${field.name} must be true or false`);
       }
-    } else if (field.type === 'color') {
+    } else if (field.type === "color") {
       if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
         errors.push(`${field.name} must be hex color (#RRGGBB)`);
       }
@@ -79,28 +84,34 @@ function validateInstanceAgainstSchema(data, schema) {
  */
 export function bulkCreateInstances(db, subEntityId, instances) {
   if (!Array.isArray(instances)) {
-    return { success: false, errors: ['Data must be an array of instances'] };
+    return { success: false, errors: ["Data must be an array of instances"] };
   }
 
   if (instances.length === 0) {
-    return { success: false, errors: ['No instances to create'] };
+    return { success: false, errors: ["No instances to create"] };
   }
 
   // Get sub-entity + schema
   const subEntity = getSubEntity(db, subEntityId);
   if (!subEntity) {
-    return { success: false, errors: ['Sub-entity not found'] };
+    return { success: false, errors: ["Sub-entity not found"] };
   }
 
   if (!subEntity.schemaFinalized) {
-    return { success: false, errors: ['Schema must be finalized before bulk create'] };
+    return {
+      success: false,
+      errors: ["Schema must be finalized before bulk create"],
+    };
   }
 
   let schema;
   try {
-    schema = typeof subEntity.schema === 'string' ? JSON.parse(subEntity.schema) : subEntity.schema;
+    schema =
+      typeof subEntity.schema === "string"
+        ? JSON.parse(subEntity.schema)
+        : subEntity.schema;
   } catch {
-    return { success: false, errors: ['Schema parse error'] };
+    return { success: false, errors: ["Schema parse error"] };
   }
 
   // Validate all instances first
@@ -120,7 +131,7 @@ export function bulkCreateInstances(db, subEntityId, instances) {
 
   // All valid — create in transaction
   try {
-    db.run('BEGIN TRANSACTION');
+    db.run("BEGIN TRANSACTION");
 
     let createdCount = 0;
     instances.forEach((instanceData) => {
@@ -128,11 +139,11 @@ export function bulkCreateInstances(db, subEntityId, instances) {
       createdCount++;
     });
 
-    db.run('COMMIT');
+    db.run("COMMIT");
 
     return { success: true, created: createdCount };
   } catch (err) {
-    db.run('ROLLBACK');
+    db.run("ROLLBACK");
     return { success: false, errors: [`Transaction failed: ${err.message}`] };
   }
 }
@@ -153,13 +164,18 @@ export async function handleBulkCreateInstances(req, res, db, key, dbPath) {
 
     // Persist DB to disk
     if (key && dbPath) {
-      const { writeEncryptedDatabase } = await import('./database.js');
+      const { writeEncryptedDatabase } = await import("./database.js");
       writeEncryptedDatabase(dbPath, db, key);
     }
 
-    res.status(201).json({ created: result.created, message: `Created ${result.created} instance(s)` });
+    res
+      .status(201)
+      .json({
+        created: result.created,
+        message: `Created ${result.created} instance(s)`,
+      });
   } catch (err) {
-    console.error('[bulk-ops] create failed:', err.message);
+    console.error("[bulk-ops] create failed:", err.message);
     res.status(500).json({ errors: [`Create failed: ${err.message}`] });
   }
 }
@@ -170,36 +186,47 @@ export async function handleBulkCreateInstances(req, res, db, key, dbPath) {
  */
 export async function bulkDeleteInstances(db, instanceIds, key) {
   if (!Array.isArray(instanceIds) || instanceIds.length === 0) {
-    throw new Error('No instance IDs provided');
+    throw new Error("No instance IDs provided");
   }
 
-  const { deleteEncryptedFile } = await import('./fileStorage.js');
+  const { deleteEncryptedFile } = await import("./fileStorage.js");
   let deletedCount = 0;
   const fileIdsToDelete = [];
 
   try {
-    db.run('BEGIN TRANSACTION');
+    db.run("BEGIN TRANSACTION");
 
     instanceIds.forEach((id) => {
       // Get instance to extract file IDs
-      const stmt = db.prepare('SELECT data, subEntityId FROM instances WHERE id = ?');
+      const stmt = db.prepare(
+        "SELECT data, subEntityId FROM instances WHERE id = ?",
+      );
       stmt.bind([id]);
 
       if (stmt.step()) {
         const row = stmt.getAsObject();
-        const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+        const data =
+          typeof row.data === "string" ? JSON.parse(row.data) : row.data;
 
         // Get schema to identify file fields
-        const stmt2 = db.prepare('SELECT schema FROM sub_entities WHERE id = ?');
+        const stmt2 = db.prepare(
+          "SELECT schema FROM sub_entities WHERE id = ?",
+        );
         stmt2.bind([row.subEntityId]);
 
         if (stmt2.step()) {
           const subRow = stmt2.getAsObject();
-          const schema = typeof subRow.schema === 'string' ? JSON.parse(subRow.schema) : subRow.schema;
+          const schema =
+            typeof subRow.schema === "string"
+              ? JSON.parse(subRow.schema)
+              : subRow.schema;
 
           // Extract file IDs
           schema.forEach((field) => {
-            if ((field.type === 'image' || field.type === 'file') && data[field.name]) {
+            if (
+              (field.type === "image" || field.type === "file") &&
+              data[field.name]
+            ) {
               fileIdsToDelete.push(data[field.name]);
             }
           });
@@ -209,11 +236,11 @@ export async function bulkDeleteInstances(db, instanceIds, key) {
       stmt.free();
 
       // Delete instance
-      db.run('DELETE FROM instances WHERE id = ?', [id]);
+      db.run("DELETE FROM instances WHERE id = ?", [id]);
       deletedCount++;
     });
 
-    db.run('COMMIT');
+    db.run("COMMIT");
 
     // Delete files after transaction
     if (fileIdsToDelete.length > 0) {
@@ -221,14 +248,17 @@ export async function bulkDeleteInstances(db, instanceIds, key) {
         try {
           deleteEncryptedFile(fileId);
         } catch (err) {
-          console.warn(`[bulk-delete] failed to delete file ${fileId}:`, err.message);
+          console.warn(
+            `[bulk-delete] failed to delete file ${fileId}:`,
+            err.message,
+          );
         }
       });
     }
 
     return { deleted: deletedCount };
   } catch (err) {
-    db.run('ROLLBACK');
+    db.run("ROLLBACK");
     throw err;
   }
 }
@@ -244,14 +274,17 @@ export async function handleBulkDeleteInstances(req, res, db, key, dbPath) {
 
     // Persist DB to disk
     if (key && dbPath) {
-      const { writeEncryptedDatabase } = await import('./database.js');
+      const { writeEncryptedDatabase } = await import("./database.js");
       writeEncryptedDatabase(dbPath, db, key);
     }
 
-    res.json({ deleted: result.deleted, message: `Deleted ${result.deleted} instance(s)` });
+    res.json({
+      deleted: result.deleted,
+      message: `Deleted ${result.deleted} instance(s)`,
+    });
   } catch (err) {
-    console.error('[bulk-ops] delete failed:', err.message);
-    res.status(500).json({ error: 'Delete failed: ' + err.message });
+    console.error("[bulk-ops] delete failed:", err.message);
+    res.status(500).json({ error: "Delete failed: " + err.message });
   }
 }
 
@@ -260,35 +293,76 @@ export async function handleBulkDeleteInstances(req, res, db, key, dbPath) {
  */
 export async function bulkDeleteSubEntities(db, subEntityIds, key) {
   if (!Array.isArray(subEntityIds) || subEntityIds.length === 0) {
-    throw new Error('No sub-entity IDs provided');
+    throw new Error("No sub-entity IDs provided");
   }
 
-  const { deleteEncryptedFile } = await import('./fileStorage.js');
+  const subEntityIdsToDelete = [...new Set(subEntityIds)];
+  const entityDeleteCounts = new Map();
+  subEntityIdsToDelete.forEach((id) => {
+    const subEntity = getSubEntity(db, id);
+    if (!subEntity) {
+      throw new Error("Sub-entity not found");
+    }
+
+    entityDeleteCounts.set(
+      subEntity.entityId,
+      (entityDeleteCounts.get(subEntity.entityId) || 0) + 1,
+    );
+  });
+
+  entityDeleteCounts.forEach((deleteCount, entityId) => {
+    const stmt = db.prepare(
+      "SELECT COUNT(*) as count FROM sub_entities WHERE entityId = ?",
+    );
+    stmt.bind([entityId]);
+    stmt.step();
+    const currentCount = stmt.getAsObject().count;
+    stmt.free();
+
+    if (currentCount - deleteCount < 1) {
+      throw new Error(
+        "Cannot delete last sub-entity. Entity must have at least one.",
+      );
+    }
+  });
+
+  const { deleteEncryptedFile } = await import("./fileStorage.js");
   let deletedCount = 0;
   const fileIdsToDelete = [];
 
   try {
-    db.run('BEGIN TRANSACTION');
+    db.run("BEGIN TRANSACTION");
 
-    subEntityIds.forEach((id) => {
+    subEntityIdsToDelete.forEach((id) => {
       // Get all instances to extract file IDs (before cascade delete)
-      const stmt = db.prepare('SELECT data, subEntityId FROM instances WHERE subEntityId = ?');
+      const stmt = db.prepare(
+        "SELECT data, subEntityId FROM instances WHERE subEntityId = ?",
+      );
       stmt.bind([id]);
 
       while (stmt.step()) {
         const row = stmt.getAsObject();
-        const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+        const data =
+          typeof row.data === "string" ? JSON.parse(row.data) : row.data;
 
         // Get schema
-        const stmt2 = db.prepare('SELECT schema FROM sub_entities WHERE id = ?');
+        const stmt2 = db.prepare(
+          "SELECT schema FROM sub_entities WHERE id = ?",
+        );
         stmt2.bind([id]);
 
         if (stmt2.step()) {
           const subRow = stmt2.getAsObject();
-          const schema = typeof subRow.schema === 'string' ? JSON.parse(subRow.schema) : subRow.schema;
+          const schema =
+            typeof subRow.schema === "string"
+              ? JSON.parse(subRow.schema)
+              : subRow.schema;
 
           schema.forEach((field) => {
-            if ((field.type === 'image' || field.type === 'file') && data[field.name]) {
+            if (
+              (field.type === "image" || field.type === "file") &&
+              data[field.name]
+            ) {
               fileIdsToDelete.push(data[field.name]);
             }
           });
@@ -298,11 +372,11 @@ export async function bulkDeleteSubEntities(db, subEntityIds, key) {
       stmt.free();
 
       // Delete sub-entity (cascades to instances)
-      db.run('DELETE FROM sub_entities WHERE id = ?', [id]);
+      db.run("DELETE FROM sub_entities WHERE id = ?", [id]);
       deletedCount++;
     });
 
-    db.run('COMMIT');
+    db.run("COMMIT");
 
     // Delete files after transaction
     if (fileIdsToDelete.length > 0) {
@@ -310,14 +384,17 @@ export async function bulkDeleteSubEntities(db, subEntityIds, key) {
         try {
           deleteEncryptedFile(fileId);
         } catch (err) {
-          console.warn(`[bulk-delete] failed to delete file ${fileId}:`, err.message);
+          console.warn(
+            `[bulk-delete] failed to delete file ${fileId}:`,
+            err.message,
+          );
         }
       });
     }
 
     return { deleted: deletedCount };
   } catch (err) {
-    db.run('ROLLBACK');
+    db.run("ROLLBACK");
     throw err;
   }
 }
@@ -329,18 +406,21 @@ export async function handleBulkDeleteSubEntities(req, res, db, key, dbPath) {
   try {
     const { subEntityIds } = req.body;
 
-    const result = bulkDeleteSubEntities(db, subEntityIds, key);
+    const result = await bulkDeleteSubEntities(db, subEntityIds, key);
 
     // Persist DB to disk
     if (key && dbPath) {
-      const { writeEncryptedDatabase } = await import('./database.js');
+      const { writeEncryptedDatabase } = await import("./database.js");
       writeEncryptedDatabase(dbPath, db, key);
     }
 
-    res.json({ deleted: result.deleted, message: `Deleted ${result.deleted} sub-entity(ies)` });
+    res.json({
+      deleted: result.deleted,
+      message: `Deleted ${result.deleted} sub-entity(ies)`,
+    });
   } catch (err) {
-    console.error('[bulk-ops] sub-delete failed:', err.message);
-    res.status(500).json({ error: 'Delete failed: ' + err.message });
+    console.error("[bulk-ops] sub-delete failed:", err.message);
+    res.status(500).json({ error: "Delete failed: " + err.message });
   }
 }
 
@@ -349,15 +429,15 @@ export async function handleBulkDeleteSubEntities(req, res, db, key, dbPath) {
  */
 export async function bulkDeleteEntities(db, entityIds, key) {
   if (!Array.isArray(entityIds) || entityIds.length === 0) {
-    throw new Error('No entity IDs provided');
+    throw new Error("No entity IDs provided");
   }
 
-  const { deleteEncryptedFile } = await import('./fileStorage.js');
+  const { deleteEncryptedFile } = await import("./fileStorage.js");
   let deletedCount = 0;
   const fileIdsToDelete = [];
 
   try {
-    db.run('BEGIN TRANSACTION');
+    db.run("BEGIN TRANSACTION");
 
     entityIds.forEach((id) => {
       // Get all instances to extract file IDs (before cascade delete)
@@ -370,11 +450,16 @@ export async function bulkDeleteEntities(db, entityIds, key) {
 
       while (stmt.step()) {
         const row = stmt.getAsObject();
-        const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-        const schema = typeof row.schema === 'string' ? JSON.parse(row.schema) : row.schema;
+        const data =
+          typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        const schema =
+          typeof row.schema === "string" ? JSON.parse(row.schema) : row.schema;
 
         schema.forEach((field) => {
-          if ((field.type === 'image' || field.type === 'file') && data[field.name]) {
+          if (
+            (field.type === "image" || field.type === "file") &&
+            data[field.name]
+          ) {
             fileIdsToDelete.push(data[field.name]);
           }
         });
@@ -382,11 +467,11 @@ export async function bulkDeleteEntities(db, entityIds, key) {
       stmt.free();
 
       // Delete entity (cascades to sub-entities + instances)
-      db.run('DELETE FROM entities WHERE id = ?', [id]);
+      db.run("DELETE FROM entities WHERE id = ?", [id]);
       deletedCount++;
     });
 
-    db.run('COMMIT');
+    db.run("COMMIT");
 
     // Delete files after transaction
     if (fileIdsToDelete.length > 0) {
@@ -394,14 +479,17 @@ export async function bulkDeleteEntities(db, entityIds, key) {
         try {
           deleteEncryptedFile(fileId);
         } catch (err) {
-          console.warn(`[bulk-delete] failed to delete file ${fileId}:`, err.message);
+          console.warn(
+            `[bulk-delete] failed to delete file ${fileId}:`,
+            err.message,
+          );
         }
       });
     }
 
     return { deleted: deletedCount };
   } catch (err) {
-    db.run('ROLLBACK');
+    db.run("ROLLBACK");
     throw err;
   }
 }
@@ -417,13 +505,16 @@ export async function handleBulkDeleteEntities(req, res, db, key, dbPath) {
 
     // Persist DB to disk
     if (key && dbPath) {
-      const { writeEncryptedDatabase } = await import('./database.js');
+      const { writeEncryptedDatabase } = await import("./database.js");
       writeEncryptedDatabase(dbPath, db, key);
     }
 
-    res.json({ deleted: result.deleted, message: `Deleted ${result.deleted} entity(ies)` });
+    res.json({
+      deleted: result.deleted,
+      message: `Deleted ${result.deleted} entity(ies)`,
+    });
   } catch (err) {
-    console.error('[bulk-ops] entity delete failed:', err.message);
-    res.status(500).json({ error: 'Delete failed: ' + err.message });
+    console.error("[bulk-ops] entity delete failed:", err.message);
+    res.status(500).json({ error: "Delete failed: " + err.message });
   }
 }
