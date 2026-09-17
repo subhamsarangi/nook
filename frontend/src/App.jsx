@@ -1,11 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
+import LockScreen from './LockScreen';
+import SessionHeader from './SessionHeader';
 
 function App() {
+  const [unlocked, setUnlocked] = useState(false);
+
+  const handleUnlock = () => {
+    setUnlocked(true);
+  };
+
+  const handleSessionExpired = () => {
+    setUnlocked(false);
+  };
+
+  if (!unlocked) {
+    return <LockScreen onUnlock={handleUnlock} />;
+  }
+
   return (
-    <div className="app">
-      <h1>Nook — Personal Data Vault</h1>
-      <p>Frontend scaffold. Backend on port 3001.</p>
-    </div>
+    <>
+      <SessionHeader onLock={() => setUnlocked(false)} onSessionExpired={handleSessionExpired} />
+      <div className="app">
+        <h2>Welcome to Nook</h2>
+        <p>Vault unlocked. Ready to work.</p>
+      </div>
+    </>
   );
 }
 

@@ -39,9 +39,10 @@ progress as you build.
 - [x] 2.10 **Persisted failed-attempt tracking**: store failed-unlock count + last-attempt timestamp in `vault.meta.json` (plaintext, non-secret — just a counter)
       → must survive server restarts, so an attacker can't reset backoff by restarting the dev server
 - [x] 2.11 Exponential backoff on unlock attempts, driven by 2.10's persisted count (e.g. 1s, 2s, 4s, 8s...), enforced server-side regardless of frontend state
+- [x] 2.12 Password reset endpoint (POST /api/reset-vault) — deletes vault files + reinits with new password (only callable when unlocked)
 
 **Depends on:** Phase 1
-**Chain:** 2.1 → 2.2 → 2.3 → 2.3a → 2.5 → 2.6 → 2.7 → 2.8 → 2.9 → 2.10 → 2.11 (2.4 parallel-safe)
+**Chain:** 2.1 → 2.2 → 2.3 → 2.3a → 2.5 → 2.6 → 2.7 → 2.8 → 2.9 → 2.10 → 2.11 → 2.12 (2.4 parallel-safe)
 
 ---
 
