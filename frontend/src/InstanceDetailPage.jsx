@@ -1,29 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './InstanceDetailPage.css';
 
-export default function InstanceDetailPage({ instanceId, subEntity, onBack, apiUrl }) {
-  const [instance, setInstance] = useState(null);
+export default function InstanceDetailPage({ instance, subEntity, entity, entityId, subEntityId, onBack, apiUrl }) {
+  const [instanceData, setInstanceData] = useState(instance || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [downloadingFile, setDownloadingFile] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadInstance();
-  }, [instanceId]);
+    if (!instanceData) {
+      loadInstance();
+    }
+  }, []);
 
   const loadInstance = async () => {
+    if (instanceData) return; // Already loaded from props
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch(`${apiUrl}/api/instances/${instanceId}`);
+      const res = await fetch(`${apiUrl}/api/instances/${instance?.id}`);
 
       if (!res.ok) {
         throw new Error('Failed to load instance');
       }
 
       const data = await res.json();
-      setInstance(data);
+      setInstanceData(data);
     } catch (err) {
       setError('Load failed: ' + err.message);
     } finally {
@@ -137,7 +142,7 @@ export default function InstanceDetailPage({ instanceId, subEntity, onBack, apiU
     return <div className="loading">Loading instance...</div>;
   }
 
-  if (!instance) {
+  if (!instanceData) {
     return <div className="error-banner">Instance not found</div>;
   }
 
@@ -158,7 +163,7 @@ export default function InstanceDetailPage({ instanceId, subEntity, onBack, apiU
         <div>
           <h1>🔍 Instance Details</h1>
           <p className="breadcrumb">
-            <a onClick={onBack}>← Back</a> / {subEntity.name} / {instanceId}
+            <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / <a onClick={() => navigate(`/entities/${entityId}/sub-entities/${subEntityId}`)}>{subEntity?.name || 'Sub-Entity'}</a> / ID: {instance?.id}
           </p>
         </div>
       </div>
@@ -169,15 +174,15 @@ export default function InstanceDetailPage({ instanceId, subEntity, onBack, apiU
         <div className="metadata">
           <div className="metadata-item">
             <span className="label">ID:</span>
-            <code className="mono">{instance.id}</code>
+            <code className="mono">{instanceData.id}</code>
           </div>
           <div className="metadata-item">
             <span className="label">Created:</span>
-            <span>{new Date(instance.createdAt).toLocaleString()}</span>
+            <span>{new Date(instanceData.createdAt).toLocaleString()}</span>
           </div>
           <div className="metadata-item">
             <span className="label">Updated:</span>
-            <span>{new Date(instance.updatedAt).toLocaleString()}</span>
+            <span>{new Date(instanceData.updatedAt).toLocaleString()}</span>
           </div>
         </div>
 
@@ -195,7 +200,7 @@ export default function InstanceDetailPage({ instanceId, subEntity, onBack, apiU
               </div>
 
               <div className="field-value">
-                {renderFieldValue(instance.data[field.name], field)}
+                {renderFieldValue(instanceData.data[field.name], field)}
               </div>
             </div>
           ))}

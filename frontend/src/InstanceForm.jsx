@@ -7,6 +7,7 @@ export default function InstanceForm({
   instance = null,
   onSubmit,
   onCancel,
+  onDelete,
   apiUrl,
 }) {
   const [formData, setFormData] = useState({});
@@ -316,6 +317,16 @@ export default function InstanceForm({
         <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting ? 'Submitting...' : instance ? 'Update Instance' : 'Create Instance'}
         </button>
+        {instance && onDelete && (
+          <button
+            type="button"
+            className="btn-danger"
+            onClick={onDelete}
+            disabled={submitting}
+          >
+            🗑️ Delete
+          </button>
+        )}
       </div>
     </form>
   );

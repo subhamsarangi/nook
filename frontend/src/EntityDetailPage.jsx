@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SchemaBuilder from './SchemaBuilder';
-import InstanceListPage from './InstanceListPage';
 import './EntityDetailPage.css';
 
 export default function EntityDetailPage({ entityId, onBack }) {
@@ -19,9 +19,9 @@ export default function EntityDetailPage({ entityId, onBack }) {
   const [selectedSubEntityIds, setSelectedSubEntityIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkCascadeInfo, setBulkCascadeInfo] = useState(null);
-  const [selectedSubEntityForInstances, setSelectedSubEntityForInstances] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
@@ -225,44 +225,16 @@ export default function EntityDetailPage({ entityId, onBack }) {
     return <div className="error-banner">Entity not found</div>;
   }
 
-  // If viewing instances for a sub-entity, show that page
-  if (selectedSubEntityForInstances) {
-    return (
-      <div className="entity-detail-page">
-        <div className="detail-header">
-          <div className="detail-header-left">
-            <h1>{entity.name}</h1>
-            <p className="entity-desc">Instances for "{selectedSubEntityForInstances.name}"</p>
-          </div>
-          <div className="detail-header-right">
-            <a className="back-link" onClick={() => setSelectedSubEntityForInstances(null)}>
-              ← Back to Sub-Entities
-            </a>
-          </div>
-        </div>
-
-        <InstanceListPage
-          subEntity={selectedSubEntityForInstances}
-          onBack={() => setSelectedSubEntityForInstances(null)}
-          apiUrl={apiUrl}
-        />
-      </div>
-    );
-  }
-
   // If editing schema for a sub-entity, show schema builder
   if (selectedSubEntityForSchema) {
     return (
       <div className="entity-detail-page">
-        <div className="detail-header">
-          <div className="detail-header-left">
+        <div className="page-header">
+          <div>
             <h1>{entity.name}</h1>
-            <p className="entity-desc">Editing schema for "{selectedSubEntityForSchema.name}"</p>
-          </div>
-          <div className="detail-header-right">
-            <a className="back-link" onClick={onBack}>
-              ← Back to Entities
-            </a>
+            <p className="breadcrumb">
+              <a onClick={() => navigate(`/entities/${entityId}`)}>← Back to {entity.name}</a>
+            </p>
           </div>
         </div>
 
@@ -278,43 +250,23 @@ export default function EntityDetailPage({ entityId, onBack }) {
 
   return (
     <div className="entity-detail-page">
-      <div className="detail-header">
-        <div className="detail-header-left">
+      <div className="page-header">
+        <div>
           <h1>{entity.name}</h1>
-          {entity.description && <p className="entity-desc">{entity.description}</p>}
+          <p className="breadcrumb">
+            <a onClick={() => navigate('/')}>← Back to Entities</a>
+          </p>
         </div>
-        <div className="detail-header-right">
-          <a className="back-link" onClick={onBack}>
-            ← Back to Entities
-          </a>
-        </div>
+        {!showCreateForm && !editingId && (
+          <div className="header-actions">
+            <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
+              + New Sub-Entity
+            </button>
+          </div>
+        )}
       </div>
 
       {error && <div className="error-banner">{error}</div>}
-
-      <div className="section-header">
-        <h2>Sub-Entities</h2>
-        <div className="display-mode-toggle">
-          <button
-            className={`toggle-btn ${displayMode === 'list' ? 'active' : ''}`}
-            onClick={() => setDisplayMode('list')}
-          >
-            📋 List
-          </button>
-          <button
-            className={`toggle-btn ${displayMode === 'gallery' ? 'active' : ''}`}
-            onClick={() => setDisplayMode('gallery')}
-          >
-            🖼️ Gallery
-          </button>
-        </div>
-      </div>
-
-      {!showCreateForm && !editingId && (
-        <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
-          + New Sub-Entity
-        </button>
-      )}
 
       {/* Create/Edit Form */}
       {(showCreateForm || editingId) && (
@@ -350,6 +302,15 @@ export default function EntityDetailPage({ entityId, onBack }) {
               <button type="button" className="btn-secondary" onClick={handleCancel}>
                 Cancel
               </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={() => handleDeleteClick(editingId)}
+                >
+                  🗑️ Delete
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -435,7 +396,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
                 </div>
 
                 <div className="sub-entity-actions">
-                  <button className="btn-link" onClick={() => setSelectedSubEntityForInstances(sub)}>
+                  <button className="btn-link" onClick={() => navigate(`/entities/${entityId}/sub-entities/${sub.id}`)}>
                     Instances
                   </button>
                   <button className="btn-link" onClick={() => handleEditSchema(sub)}>
@@ -444,12 +405,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
                   <button className="btn-link" onClick={() => handleEdit(sub)}>
                     Edit
                   </button>
-                  <button
-                    className="btn-link btn-danger"
-                    onClick={() => handleDeleteClick(sub.id)}
-                  >
-                    Delete
-                  </button>
+
                 </div>
               </div>
             ))}

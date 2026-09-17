@@ -11,9 +11,29 @@
   margin-bottom: 2rem;
 }
 
-.page-header h1 {
+.home-page .page-header h1 {
   margin: 0;
   font-size: 2rem;
+  color: #b22234 !important;
+  font-family: Georgia, serif !important;
+  text-transform: uppercase !important;
+}
+
+.page-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.page-header-left {
+  flex: 1;
+}
+
+.page-header-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .error-banner {
@@ -137,12 +157,18 @@
 }
 
 .btn-danger {
-  background: #e74c3c;
-  color: white;
+  background: #e74c3c !important;
+  color: white !important;
+  font-weight: 600 !important;
 }
 
 .btn-danger:hover {
-  background: #c0392b;
+  background: #c0392b !important;
+}
+
+.btn-danger:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
 }
 
 .btn-link {
@@ -211,6 +237,8 @@
 
 .modal-actions button {
   flex: 1;
+  color: white;
+  font-weight: 600;
 }
 
 .entity-list {
@@ -263,10 +291,6 @@
 .entity-info .timestamp {
   color: #999;
   font-size: 0.85rem;
-}
-
-.entity-info {
-  flex: 1;
 }
 
 .entity-actions {

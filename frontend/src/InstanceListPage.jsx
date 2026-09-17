@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import InstanceForm from './InstanceForm';
 import BulkCreateUI from './BulkCreateUI';
 import './InstanceListPage.css';
 
-export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
+export default function InstanceListPage({ subEntity, entity, entityId, onBack, apiUrl }) {
   const [instances, setInstances] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,6 +14,8 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadInstances();
@@ -175,7 +178,7 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
           <div>
             <h1>📝 New Instance</h1>
             <p className="breadcrumb">
-              <a onClick={onBack}>← Back to Entities</a> / {subEntity.name}
+              <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / {subEntity.name}
             </p>
           </div>
         </div>
@@ -197,7 +200,7 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
           <div>
             <h1>📦 Bulk Create Instances</h1>
             <p className="breadcrumb">
-              <a onClick={onBack}>← Back to Entities</a> / {subEntity.name}
+              <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / {subEntity.name}
             </p>
           </div>
         </div>
@@ -223,7 +226,7 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
           <div>
             <h1>✏️ Edit Instance</h1>
             <p className="breadcrumb">
-              <a onClick={onBack}>← Back to Entities</a> / {subEntity.name}
+              <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / {subEntity.name}
             </p>
           </div>
         </div>
@@ -233,6 +236,7 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
           instance={editingInstance}
           onSubmit={handleUpdateSubmit}
           onCancel={() => setEditingInstance(null)}
+          onDelete={() => handleDeleteClick(editingInstance)}
           apiUrl={apiUrl}
         />
       </div>
@@ -245,7 +249,7 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
         <div>
           <h1>📋 Instances</h1>
           <p className="breadcrumb">
-            <a onClick={onBack}>← Back to Entities</a> / {subEntity.name}
+            <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / {subEntity.name}
           </p>
         </div>
         <div className="header-actions">
@@ -361,12 +365,7 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
                     >
                       Edit
                     </button>
-                    <button
-                      className="btn-link btn-danger"
-                      onClick={() => handleDeleteClick(instance)}
-                    >
-                      Delete
-                    </button>
+
                   </td>
                 </tr>
               ))}

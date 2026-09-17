@@ -4,7 +4,7 @@
   margin: 0 auto;
 }
 
-.detail-header {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -13,31 +13,34 @@
   padding-bottom: 1rem;
 }
 
-.detail-header-left h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2rem;
-}
-
-.detail-header-left .entity-desc {
-  color: #666;
-  font-size: 0.95rem;
+.entity-detail-page .page-header h1 {
   margin: 0;
+  font-size: 2rem;
+  color: #000080 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  text-transform: uppercase !important;
 }
 
-.detail-header-right {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
+.page-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #000080 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
-.back-link {
+.page-header .breadcrumb {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+}
+
+.page-header .breadcrumb a {
   color: #667eea;
-  text-decoration: none;
-  font-size: 0.95rem;
   cursor: pointer;
+  text-decoration: none;
 }
 
-.back-link:hover {
+.page-header .breadcrumb a:hover {
   text-decoration: underline;
 }
 
@@ -87,10 +90,6 @@
   align-items: center;
   margin-top: 2rem;
   margin-bottom: 1.5rem;
-}
-
-.section-header h2 {
-  margin: 0;
 }
 
 .display-mode-toggle {
@@ -212,10 +211,23 @@
 .btn-primary {
   background: #667eea;
   color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .btn-primary:hover {
   background: #5568d3;
+}
+
+.btn-primary:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -228,12 +240,13 @@
 }
 
 .btn-danger {
-  background: #e74c3c;
-  color: white;
+  background: #e74c3c !important;
+  color: white !important;
+  font-weight: 600 !important;
 }
 
 .btn-danger:hover {
-  background: #c0392b;
+  background: #c0392b !important;
 }
 
 .btn-link {
@@ -341,6 +354,8 @@
 
 .modal-actions button {
   flex: 1;
+  color: white;
+  font-weight: 600;
 }
 
 .loading,

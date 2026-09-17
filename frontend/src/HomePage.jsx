@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
-import EntityDetailPage from './EntityDetailPage';
 
 export default function HomePage() {
   const [entities, setEntities] = useState([]);
@@ -12,12 +12,12 @@ export default function HomePage() {
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [cascadeInfo, setCascadeInfo] = useState(null);
-  const [selectedEntityId, setSelectedEntityId] = useState(null);
   const [selectedEntityIds, setSelectedEntityIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkCascadeInfo, setBulkCascadeInfo] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const navigate = useNavigate();
 
   // Load entities on mount
   useEffect(() => {
@@ -200,27 +200,16 @@ export default function HomePage() {
     }
   };
 
-  // If viewing entity detail, show that page
-  if (selectedEntityId) {
-    return (
-      <EntityDetailPage
-        entityId={selectedEntityId}
-        onBack={() => {
-          setSelectedEntityId(null);
-          loadEntities();
-        }}
-      />
-    );
-  }
-
   return (
     <div className="home-page">
       <div className="page-header">
         <h1>📚 Entities</h1>
         {!showCreateForm && !editingId && (
-          <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
-            + New Entity
-          </button>
+          <div className="header-actions">
+            <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
+              + New Entity
+            </button>
+          </div>
         )}
       </div>
 
@@ -260,6 +249,15 @@ export default function HomePage() {
               <button type="button" className="btn-secondary" onClick={handleCancel}>
                 Cancel
               </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={() => handleDeleteClick(editingId)}
+                >
+                  🗑️ Delete
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -348,18 +346,13 @@ export default function HomePage() {
                 </div>
 
                 <div className="entity-actions">
-                  <button className="btn-link" onClick={() => setSelectedEntityId(entity.id)}>
+                  <button className="btn-link" onClick={() => navigate(`/entities/${entity.id}`)}>
                     View
                   </button>
                   <button className="btn-link" onClick={() => handleEdit(entity)}>
                     Edit
                   </button>
-                  <button
-                    className="btn-link btn-danger"
-                    onClick={() => handleDeleteClick(entity.id)}
-                  >
-                    Delete
-                  </button>
+
                 </div>
               </div>
             ))}
