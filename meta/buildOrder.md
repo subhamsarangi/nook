@@ -149,9 +149,9 @@ Note: this phase is the most parallelizable relative to Phase 6–8 — it just 
 
 ## Phase 11 — Corruption Resistance & Backups
 
-- [ ] 11.1 Rolling backups before each write/re-encryption cycle (keep last N versions)
-- [ ] 11.2 Verify AEAD auth-tag failure handling (corrupted file → clear error, not silent data loss)
-- [ ] 11.3 DB integrity check on boot (post-unlock), surfaced to user if something looks wrong
+- [x] 11.1 Rolling backups before each write/re-encryption cycle (keep last N versions)
+- [x] 11.2 Verify AEAD auth-tag failure handling (corrupted file → clear error, not silent data loss)
+- [x] 11.3 DB integrity check on boot (post-unlock), surfaced to user if something looks wrong
 
 **Depends on:** 2.4 (atomic writes) → 11.1; 6.1 (encryption) → 11.2; 2.6 (boot/unlock flow) → 11.3
 Note: all three are independent of each other — can build in any order once their respective dependency is ready.

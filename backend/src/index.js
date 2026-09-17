@@ -109,6 +109,11 @@ app.post('/api/unlock', async (req, res) => {
     const result = await unlockVault(password, VAULT_META_PATH, DB_PATH);
 
     if (!result.success) {
+      // Check for corruption error
+      if (result.error && result.error.includes('corrupted') || result.error && result.error.includes('authentication')) {
+        console.error('[unlock] DB corruption detected:', result.error);
+        return res.status(410).json({ error: 'Vault database corrupted. Cannot recover without backup.' });
+      }
       return res.status(500).json({ error: result.error });
     }
 
@@ -118,6 +123,11 @@ app.post('/api/unlock', async (req, res) => {
 
     return res.json({ message: 'Unlocked' });
   } catch (err) {
+    // Check for AEAD corruption
+    if (err.name === 'AEADError') {
+      console.error('[unlock] AEAD authentication failed (DB corrupted):', err.message);
+      return res.status(410).json({ error: 'Vault database corrupted. Cannot recover without backup.' });
+    }
     console.error('[unlock] error:', err.message);
     res.status(500).json({ error: 'Unlock failed' });
   }
@@ -536,6 +546,7 @@ app.post('/api/files/upload', async (req, res) => {
 app.get('/api/files/:fileId', async (req, res) => {
   try {
     const { loadEncryptedFile } = await import('./fileStorage.js');
+    const { AEADError } = await import('./crypto.js');
     const { sessionState } = await import('./boot.js');
     const key = sessionState.encryptionKey;
 
@@ -545,8 +556,15 @@ app.get('/api/files/:fileId', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buffer);
   } catch (err) {
+    // Check if it's a corruption error (AEAD auth-tag failure)
+    if (err.name === 'AEADError') {
+      console.error('[file download] AEAD authentication failed (corrupted file):', err.message);
+      return res.status(410).json({ error: 'File corrupted or tampered with. Data cannot be recovered.' });
+    }
+    
+    // File not found or other error
     console.error('[file download] failed:', err.message);
-    res.status(404).json({ error: 'File not found' });
+    res.status(404).json({ error: 'File not found or inaccessible' });
   }
 });
 
@@ -583,6 +601,79 @@ app.post('/api/files/sweep-orphans', async (req, res) => {
   } catch (err) {
     console.error('[sweep orphans] failed:', err.message);
     res.status(500).json({ error: 'Failed to sweep orphan files: ' + err.message });
+  }
+});
+
+// Backup status endpoint: GET /api/backups/status
+app.get('/api/backups/status', async (req, res) => {
+  try {
+    const { getBackupStatus } = await import('./backups.js');
+    const status = getBackupStatus();
+    res.json(status);
+  } catch (err) {
+    console.error('[backup status] failed:', err.message);
+    res.status(500).json({ error: 'Failed to get backup status' });
+  }
+});
+
+// List backups endpoint: GET /api/backups/list
+app.get('/api/backups/list', async (req, res) => {
+  try {
+    const { listBackups } = await import('./backups.js');
+    const backups = listBackups();
+    res.json({ backups });
+  } catch (err) {
+    console.error('[backup list] failed:', err.message);
+    res.status(500).json({ error: 'Failed to list backups' });
+  }
+});
+
+// Restore from backup endpoint: POST /api/backups/restore/:filename
+app.post('/api/backups/restore/:filename', async (req, res) => {
+  try {
+    const key = getSessionKey();
+    if (!key) {
+      return res.status(401).json({ error: 'Vault is locked' });
+    }
+
+    const { restoreDBBackup } = await import('./backups.js');
+    const { DB_PATH } = process.env;
+    const dbPath = DB_PATH || './vault.db';
+
+    restoreDBBackup(req.params.filename, dbPath);
+
+    // Reload database from restored backup
+    const { readEncryptedDatabase } = await import('./database.js');
+    const db = await readEncryptedDatabase(dbPath, key);
+
+    if (db) {
+      const { sessionState } = await import('./boot.js');
+      sessionState.database = db;
+      res.json({ message: 'Restored from backup successfully' });
+    } else {
+      res.status(500).json({ error: 'Failed to reload database after restore' });
+    }
+  } catch (err) {
+    console.error('[backup restore] failed:', err.message);
+    res.status(500).json({ error: 'Restore failed: ' + err.message });
+  }
+});
+
+// Integrity check endpoint: GET /api/system/integrity
+app.get('/api/system/integrity', async (req, res) => {
+  try {
+    const db = getDatabase();
+    if (!db) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+
+    const { verifyDatabaseIntegrity } = await import('./database.js');
+    const result = verifyDatabaseIntegrity(db);
+
+    res.json(result);
+  } catch (err) {
+    console.error('[integrity check] failed:', err.message);
+    res.status(500).json({ error: 'Integrity check failed' });
   }
 });
 

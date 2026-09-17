@@ -9,7 +9,7 @@
 
 import fs from 'fs';
 import initSqlJs from 'sql.js';
-import { encryptAESGCM, decryptAESGCM } from './crypto.js';
+import { encryptAESGCM, decryptAESGCM, AEADError } from './crypto.js';
 import { atomicWriteSync } from './atomicWrite.js';
 
 let SQL = null;
@@ -27,6 +27,7 @@ async function initSQL() {
 /**
  * Reads and decrypts a SQLite database file.
  * Returns a sql.js Database object, or null if file doesn't exist.
+ * Throws AEADError if database is corrupted.
  */
 export async function readEncryptedDatabase(dbPath, key) {
   await initSQL();
@@ -46,12 +47,16 @@ export async function readEncryptedDatabase(dbPath, key) {
     const iv = Buffer.from(meta.iv, 'base64');
     const authTag = Buffer.from(meta.authTag, 'base64');
 
-    // Decrypt
+    // Decrypt (may throw AEADError on corruption)
     const plainDBBuffer = decryptAESGCM(ciphertext, iv, authTag, key);
 
     // Open in sql.js
     return new SQL.Database(plainDBBuffer);
   } catch (err) {
+    // Re-throw AEADError as-is (already has clear message)
+    if (err instanceof AEADError) {
+      throw err;
+    }
     throw new Error(`Failed to read encrypted database: ${err.message}`);
   }
 }
@@ -173,4 +178,63 @@ export function initializeSchema(db) {
       FOREIGN KEY (subEntityId) REFERENCES sub_entities(id) ON DELETE CASCADE
     );
   `);
+}
+
+/**
+ * Verify database integrity on boot (post-unlock).
+ * Runs PRAGMA integrity_check, validates schema, checks foreign keys.
+ * Returns { ok: boolean, warnings: string[], errors: string[] }
+ */
+export function verifyDatabaseIntegrity(db) {
+  const warnings = [];
+  const errors = [];
+
+  try {
+    // Run PRAGMA integrity_check (built-in SQLite check)
+    const results = queryRead(db, 'PRAGMA integrity_check');
+    if (results.length > 0 && results[0].integrity_check !== 'ok') {
+      errors.push('SQLite integrity check failed: ' + results[0].integrity_check);
+    }
+
+    // Check for foreign key constraints
+    try {
+      const fkResults = queryRead(db, 'PRAGMA foreign_key_check');
+      if (fkResults && fkResults.length > 0) {
+        warnings.push(`Found ${fkResults.length} foreign key constraint violations (can be auto-repaired)`);
+      }
+    } catch (fkErr) {
+      // Some SQLite builds don't support foreign_key_check; that's OK
+    }
+
+    // Verify tables exist
+    const tables = queryRead(
+      db,
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('entities', 'sub_entities', 'instances')"
+    );
+    if (tables.length !== 3) {
+      errors.push('Database schema incomplete: missing tables');
+    }
+
+    // Basic row counts (early warning if something looks very wrong)
+    const counts = queryRead(db, 'SELECT COUNT(*) as cnt FROM entities');
+    if (!counts || counts.length === 0) {
+      warnings.push('Could not read row count (minor issue)');
+    }
+
+    return {
+      ok: errors.length === 0,
+      warnings,
+      errors,
+      checked: true,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      warnings,
+      errors: [err.message],
+      checked: true,
+      timestamp: new Date().toISOString(),
+    };
+  }
 }

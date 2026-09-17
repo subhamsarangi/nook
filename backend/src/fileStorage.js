@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { atomicWriteSync } from './atomicWrite.js';
+import { AEADError } from './crypto.js';
 
 const VAULT_FILES_DIR = process.env.VAULT_FILES_DIR || './vault-files';
 
@@ -50,19 +51,28 @@ export function encryptFileBuffer(buffer, key) {
 /**
  * Decrypt file buffer with AES-256-GCM
  * iv, authTag, encrypted are base64-encoded strings
+ * Throws AEADError if auth tag verification fails (data corruption)
  */
 export function decryptFileBuffer(encrypted, iv, authTag, key) {
-  const decipher = crypto.createDecipheriv(
-    'aes-256-gcm',
-    key,
-    Buffer.from(iv, 'base64')
-  );
-  decipher.setAuthTag(Buffer.from(authTag, 'base64'));
+  try {
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      key,
+      Buffer.from(iv, 'base64')
+    );
+    decipher.setAuthTag(Buffer.from(authTag, 'base64'));
 
-  let decrypted = decipher.update(Buffer.from(encrypted, 'base64'));
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
+    let decrypted = decipher.update(Buffer.from(encrypted, 'base64'));
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
 
-  return decrypted;
+    return decrypted;
+  } catch (err) {
+    // Specifically check for auth tag failures (corruption indicator)
+    if (err.message.includes('Unsupported state or unable to authenticate data')) {
+      throw new AEADError('File data corrupted or tampered with (authentication failed)');
+    }
+    throw new AEADError(`File decryption failed: ${err.message}`);
+  }
 }
 
 /**

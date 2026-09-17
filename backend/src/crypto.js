@@ -2,6 +2,17 @@ import crypto from 'crypto';
 import argon2 from 'argon2';
 
 /**
+ * Custom error for AEAD authentication tag failures (data corruption)
+ */
+export class AEADError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'AEADError';
+    this.isCorruption = true;
+  }
+}
+
+/**
  * Derives an encryption key from a password using Argon2id.
  * Returns: { key (Buffer), salt (Buffer), kdfParams (object) }
  */
@@ -67,6 +78,7 @@ export function encryptAESGCM(plaintext, key) {
 
 /**
  * Decrypts AES-256-GCM ciphertext.
+ * Throws AEADError if auth tag verification fails (data corruption).
  */
 export function decryptAESGCM(ciphertext, iv, authTag, key) {
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
@@ -79,7 +91,11 @@ export function decryptAESGCM(ciphertext, iv, authTag, key) {
     ]);
     return plaintext;
   } catch (err) {
-    throw new Error(`AES-256-GCM decryption failed (corrupted data?): ${err.message}`);
+    // Check for auth tag verification failure (corruption indicator)
+    if (err.message.includes('Unsupported state or unable to authenticate data')) {
+      throw new AEADError('Data corrupted or tampered with (authentication tag verification failed)');
+    }
+    throw new AEADError(`Decryption failed: ${err.message}`);
   }
 }
 

@@ -84,7 +84,7 @@ export async function unlockVault(password, metaPath, dbPath) {
 
   try {
     // Read encrypted database
-    const { readEncryptedDatabase } = await import('./database.js');
+    const { readEncryptedDatabase, verifyDatabaseIntegrity } = await import('./database.js');
     const db = await readEncryptedDatabase(dbPath, key);
 
     if (!db) {
@@ -103,12 +103,31 @@ export async function unlockVault(password, metaPath, dbPath) {
       return { success: true };
     }
 
+    // Verify database integrity (post-unlock check)
+    const integrityCheck = verifyDatabaseIntegrity(db);
+    if (!integrityCheck.ok) {
+      console.error('[boot] database integrity check failed:', integrityCheck.errors);
+      // Zero key before failing
+      const { zeroBuffer } = await import('./crypto.js');
+      zeroBuffer(key);
+      return {
+        success: false,
+        error: 'Database integrity check failed. Data may be corrupted.',
+        integrityIssues: integrityCheck.errors,
+      };
+    }
+
+    if (integrityCheck.warnings && integrityCheck.warnings.length > 0) {
+      console.warn('[boot] database integrity warnings:', integrityCheck.warnings);
+    }
+
     // Store session state
     sessionState.database = db;
     sessionState.encryptionKey = key;
     sessionState.locked = false;
     sessionState.unlockedAt = new Date();
     sessionState.initialized = true;
+    sessionState.integrityCheck = integrityCheck; // Store for frontend
 
     // Start auto-lock timer
     await resetAutoLockTimer();
