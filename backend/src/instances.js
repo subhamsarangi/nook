@@ -225,6 +225,14 @@ export async function handleCreateInstance(req, res, db, key) {
     }
 
     const instance = createInstance(db, subEntityId, data);
+    
+    // Persist database changes
+    const { writeEncryptedDatabase } = await import('./database.js');
+    const dbPath = process.env.DB_PATH || './vault.db';
+    if (key && dbPath) {
+      writeEncryptedDatabase(dbPath, db, key);
+    }
+    
     res.status(201).json(instance);
   } catch (err) {
     console.error('[instances] create failed:', err.message);
@@ -296,6 +304,14 @@ export async function handleUpdateInstance(req, res, db, key) {
     }
 
     const updated = updateInstance(db, id, data, key);
+    
+    // Persist database changes
+    const { writeEncryptedDatabase } = await import('./database.js');
+    const dbPath = process.env.DB_PATH || './vault.db';
+    if (key && dbPath) {
+      writeEncryptedDatabase(dbPath, db, key);
+    }
+    
     res.json(updated);
   } catch (err) {
     console.error('[instances] update failed:', err.message);
@@ -311,6 +327,14 @@ export async function handleDeleteInstance(req, res, db, key) {
     const { id } = req.params;
 
     deleteInstance(db, id, key);
+    
+    // Persist database changes
+    const { writeEncryptedDatabase } = await import('./database.js');
+    const dbPath = process.env.DB_PATH || './vault.db';
+    if (key && dbPath) {
+      writeEncryptedDatabase(dbPath, db, key);
+    }
+    
     res.json({ message: 'Instance deleted' });
   } catch (err) {
     console.error('[instances] delete failed:', err.message);

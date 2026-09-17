@@ -112,6 +112,7 @@ function InstanceListPageWrapper({ apiUrl }) {
       subEntity={subEntity}
       entity={entity}
       entityId={entityId}
+      subEntityId={subEntityId}
       onBack={() => navigate(`/entities/${entityId}`)}
       apiUrl={apiUrl}
     />

@@ -495,10 +495,12 @@ app.post('/api/files/upload', async (req, res) => {
       return res.status(400).json({ error: 'File content required' });
     }
 
+    const fileBuffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+
     const { sessionState } = await import('./boot.js');
     const key = sessionState.encryptionKey;
 
-    const fileId = await saveEncryptedFile(req.body, key, req.query.filename || 'unnamed');
+    const fileId = await saveEncryptedFile(fileBuffer, key, req.query.filename || 'unnamed');
     res.status(201).json({ fileId });
   } catch (err) {
     console.error('[file upload] failed:', err.message);

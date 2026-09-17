@@ -25,6 +25,20 @@ export default function InstanceForm({
   useEffect(() => {
     if (instance?.data) {
       setFormData(instance.data);
+      
+      // Load existing file previews for image/file fields
+      const existingFiles = {};
+      schema.forEach((field) => {
+        if ((field.type === 'image' || field.type === 'file') && instance.data[field.name]) {
+          const fileId = instance.data[field.name];
+          existingFiles[field.name] = {
+            fileId,
+            isExisting: true,
+            preview: field.type === 'image' ? `${apiUrl}/api/files/${fileId}` : null,
+          };
+        }
+      });
+      setFileUploads(existingFiles);
     } else {
       // Initialize with empty values
       const initial = {};
@@ -33,7 +47,7 @@ export default function InstanceForm({
       });
       setFormData(initial);
     }
-  }, [instance, schema]);
+  }, [instance, subEntity?.schema, apiUrl]);
 
   const handleFieldChange = (fieldName, value) => {
     setFormData((prev) => ({
@@ -107,6 +121,7 @@ export default function InstanceForm({
     }
 
     setSubmitting(true);
+    setErrors({});
 
     try {
       // Upload files first
@@ -115,12 +130,13 @@ export default function InstanceForm({
       for (const fieldName in fileUploads) {
         const upload = fileUploads[fieldName];
         if (upload?.file) {
-          const formDataUpload = new FormData();
-          formDataUpload.append('file', upload.file);
-
-          const res = await fetch(`${apiUrl}/api/files/upload?filename=${upload.file.name}`, {
+          const filename = encodeURIComponent(upload.file.name);
+          const res = await fetch(`${apiUrl}/api/files/upload?filename=${filename}`, {
             method: 'POST',
-            body: upload.file.stream(), // raw binary
+            headers: {
+              'Content-Type': 'application/octet-stream',
+            },
+            body: upload.file,
           });
 
           if (!res.ok) {
@@ -132,8 +148,13 @@ export default function InstanceForm({
         }
       }
 
-      onSubmit(dataToSubmit);
+      // Call parent's onSubmit and wait for it to complete
+      const result = await onSubmit(dataToSubmit);
+      // Only reset form on successful submission
+      setFormData(dataToSubmit);
+      setFileUploads({});
     } catch (err) {
+      // Keep the form data on error so user can fix and retry
       setErrors((prev) => ({
         ...prev,
         _form: 'Submission failed: ' + err.message,
@@ -291,8 +312,12 @@ export default function InstanceForm({
               {field.type === 'file' && fileUploads[field.name] && (
                 <div className="file-preview file">
                   <div className="file-info">
-                    <div className="filename">{fileUploads[field.name].file.name}</div>
-                    <div className="filesize">{(fileUploads[field.name].file.size / 1024).toFixed(2)} KB</div>
+                    <div className="filename">
+                      {fileUploads[field.name].file?.name || `File (ID: ${fileUploads[field.name].fileId?.substring(0, 8)}...)`}
+                    </div>
+                    {fileUploads[field.name].file?.size && (
+                      <div className="filesize">{(fileUploads[field.name].file.size / 1024).toFixed(2)} KB</div>
+                    )}
                   </div>
                   <button
                     type="button"

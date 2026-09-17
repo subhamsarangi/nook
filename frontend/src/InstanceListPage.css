@@ -129,13 +129,28 @@
 }
 
 .cell-id {
-  font-family: monospace;
+  padding: 0;
+}
+
+.btn-link-id {
+  background: transparent;
+  color: #667eea;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
   font-size: 0.85rem;
-  color: #999;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: monospace;
+  text-decoration: none;
+  transition: color 0.2s;
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.btn-link-id:hover {
+  color: #5568d3;
+  text-decoration: underline;
 }
 
 .cell-data {

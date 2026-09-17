@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import InstanceForm from './InstanceForm';
 import BulkCreateUI from './BulkCreateUI';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './InstanceListPage.css';
 
-export default function InstanceListPage({ subEntity, entity, entityId, onBack, apiUrl }) {
+export default function InstanceListPage({ subEntity, entity, entityId, subEntityId, onBack, apiUrl }) {
   const [instances, setInstances] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,9 +57,11 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
       }
 
       setShowCreateForm(false);
+      setError('');
       await loadInstances();
     } catch (err) {
       setError('Create failed: ' + err.message);
+      throw err;
     }
   };
 
@@ -77,9 +79,11 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
       }
 
       setEditingInstance(null);
+      setError('');
       await loadInstances();
     } catch (err) {
       setError('Update failed: ' + err.message);
+      throw err;
     }
   };
 
@@ -377,7 +381,12 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
                     />
                   </td>
                   <td className="cell-id" title={instance.id}>
-                    {instance.id}
+                    <Link
+                      to={`/entities/${entityId}/sub-entities/${subEntityId}/instances/${instance.id}`}
+                      className="btn-link-id"
+                    >
+                      {instance.id.substring(0, 8)}...
+                    </Link>
                   </td>
                   <td className="cell-data">
                     {Object.entries(instance.data)
