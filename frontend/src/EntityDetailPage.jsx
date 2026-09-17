@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SchemaBuilder from './SchemaBuilder';
 import DisplayConfigBuilder from './DisplayConfigBuilder';
+import SubEntityInlineDisplay from './SubEntityInlineDisplay';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './EntityDetailPage.css';
 
@@ -17,7 +18,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [cascadeInfo, setCascadeInfo] = useState(null);
   const [deleteError, setDeleteError] = useState('');
-  const [displayMode, setDisplayMode] = useState('list'); // 'list' or 'gallery' stub
+  const [displayMode, setDisplayMode] = useState('links-only'); // 'links-only' | 'inline'
   const [selectedSubEntityForSchema, setSelectedSubEntityForSchema] = useState(null);
   const [selectedSubEntityIds, setSelectedSubEntityIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -397,6 +398,22 @@ export default function EntityDetailPage({ entityId, onBack }) {
         </div>
         {!showCreateForm && !editingId && (
           <div className="header-actions">
+            <div className="display-mode-toggle">
+              <button
+                className={`toggle-btn ${displayMode === 'links-only' ? 'active' : ''}`}
+                onClick={() => setDisplayMode('links-only')}
+                title="Show sub-entities as cards with links to instances"
+              >
+                Links Only
+              </button>
+              <button
+                className={`toggle-btn ${displayMode === 'inline' ? 'active' : ''}`}
+                onClick={() => setDisplayMode('inline')}
+                title="Show instances inline under each sub-entity"
+              >
+                Inline
+              </button>
+            </div>
             <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
               + New Sub-Entity
             </button>
@@ -491,7 +508,22 @@ export default function EntityDetailPage({ entityId, onBack }) {
         <div className="empty-state">
           <p>No sub-entities yet. Create one to get started.</p>
         </div>
+      ) : displayMode === 'inline' ? (
+        // Inline mode: render each sub-entity with instances
+        <div className="inline-mode-container">
+          {subEntities.map((sub) => (
+            <SubEntityInlineDisplay
+              key={sub.id}
+              entity={entity}
+              entityId={entityId}
+              subEntity={sub}
+              apiUrl={apiUrl}
+              onInstancesChange={() => loadData()}
+            />
+          ))}
+        </div>
       ) : (
+        // Links-only mode: render sub-entity cards as before
         <>
           {selectedSubEntityIds.size > 0 && (
             <div className="bulk-action-bar">

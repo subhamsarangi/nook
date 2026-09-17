@@ -141,7 +141,7 @@ Note: this phase is the most parallelizable relative to Phase 6–8 — it just 
 
 ## Phase 10 — Entity-Level Display Modes
 
-- [ ] 10.1 Implement "inline" vs "links-only" rendering on Entity detail page, using configs from Phase 9
+- [x] 10.1 Implement "inline" vs "links-only" rendering on Entity detail page, using configs from Phase 9
 
 **Depends on:** 4.5 (toggle UI stub) + 9.1–9.4 (real configs to render against)
 
