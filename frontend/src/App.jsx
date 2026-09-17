@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LockScreen from './LockScreen';
 import SessionHeader from './SessionHeader';
+import HomePage from './HomePage';
 
 function App() {
   const [unlocked, setUnlocked] = useState(false);
@@ -20,10 +21,7 @@ function App() {
   return (
     <>
       <SessionHeader onLock={() => setUnlocked(false)} onSessionExpired={handleSessionExpired} />
-      <div className="app">
-        <h2>Welcome to Nook</h2>
-        <p>Vault unlocked. Ready to work.</p>
-      </div>
+      <HomePage />
     </>
   );
 }

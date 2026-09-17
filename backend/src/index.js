@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { vaultExists, unlockVault, lockVault, isLocked, sessionState } from './boot.js';
+import bodyParser from 'body-parser';
+import { vaultExists, unlockVault, lockVault, isLocked, sessionState, getDatabase } from './boot.js';
+import { saveEncryptedFile } from './fileStorage.js';
 
 dotenv.config();
 
@@ -13,6 +15,7 @@ const DB_PATH = process.env.DB_PATH || './vault.db';
 
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.raw({ type: 'application/octet-stream', limit: '100mb' }));
 
 // Middleware: reject all API calls if vault is locked
 app.use((req, res, next) => {
@@ -223,6 +226,253 @@ app.get('/api/session/status', (req, res) => {
     remainingMs,
     lockTimeoutMs: sessionState.lockTimeoutMs,
   });
+});
+
+// Entity CRUD endpoints
+app.post('/api/entities', async (req, res) => {
+  const { handleCreateEntity } = await import('./entities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleCreateEntity(req, res, db, key, DB_PATH);
+});
+
+app.get('/api/entities', async (req, res) => {
+  const { handleListEntities } = await import('./entities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleListEntities(req, res, db);
+});
+
+app.get('/api/entities/:id', async (req, res) => {
+  const { handleGetEntity } = await import('./entities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleGetEntity(req, res, db);
+});
+
+app.put('/api/entities/:id', async (req, res) => {
+  const { handleUpdateEntity } = await import('./entities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleUpdateEntity(req, res, db, key, DB_PATH);
+});
+
+app.get('/api/entities/:id/cascade-count', async (req, res) => {
+  const { handleCascadeCount } = await import('./entities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleCascadeCount(req, res, db);
+});
+
+app.delete('/api/entities/:id', async (req, res) => {
+  const { handleDeleteEntity } = await import('./entities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleDeleteEntity(req, res, db, key, DB_PATH);
+});
+
+// Sub-Entity CRUD endpoints
+app.post('/api/entities/:entityId/sub-entities', async (req, res) => {
+  const { handleCreateSubEntity } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleCreateSubEntity(req, res, db, key, DB_PATH);
+});
+
+app.get('/api/entities/:entityId/sub-entities', async (req, res) => {
+  const { handleListSubEntities } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleListSubEntities(req, res, db);
+});
+
+app.get('/api/sub-entities/:id', async (req, res) => {
+  const { handleGetSubEntity } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleGetSubEntity(req, res, db);
+});
+
+app.get('/api/sub-entities/:id/cascade-count', async (req, res) => {
+  const { handleCascadeCount } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleCascadeCount(req, res, db);
+});
+
+app.put('/api/sub-entities/:id', async (req, res) => {
+  const { handleUpdateSubEntity } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleUpdateSubEntity(req, res, db, key, DB_PATH);
+});
+
+app.delete('/api/sub-entities/:id', async (req, res) => {
+  const { handleDeleteSubEntity } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleDeleteSubEntity(req, res, db, key, DB_PATH);
+});
+
+// Schema endpoints
+app.put('/api/sub-entities/:id/schema', async (req, res) => {
+  const { handleUpdateSchema } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleUpdateSchema(req, res, db, key, DB_PATH);
+});
+
+app.post('/api/sub-entities/:id/finalize-schema', async (req, res) => {
+  const { handleFinalizeSchema } = await import('./subEntities.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleFinalizeSchema(req, res, db, key, DB_PATH);
+});
+
+// Instance endpoints
+app.post('/api/sub-entities/:subEntityId/instances', async (req, res) => {
+  const { handleCreateInstance } = await import('./instances.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  handleCreateInstance(req, res, db, key);
+});
+
+app.get('/api/sub-entities/:subEntityId/instances', async (req, res) => {
+  const { handleListInstances } = await import('./instances.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleListInstances(req, res, db);
+});
+
+app.get('/api/instances/:id', async (req, res) => {
+  const { handleGetInstance } = await import('./instances.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  handleGetInstance(req, res, db);
+});
+
+app.put('/api/instances/:id', async (req, res) => {
+  const { handleUpdateInstance } = await import('./instances.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  handleUpdateInstance(req, res, db, key);
+});
+
+app.delete('/api/instances/:id', async (req, res) => {
+  const { handleDeleteInstance } = await import('./instances.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  handleDeleteInstance(req, res, db, key);
+});
+
+// File upload endpoint: POST /api/files/upload
+// Expects: multipart/form-data with file field
+app.post('/api/files/upload', async (req, res) => {
+  try {
+    const { ensureFilesDir } = await import('./fileStorage.js');
+    ensureFilesDir();
+
+    // For now, accept raw binary post as the file content
+    // In production, use multer for multipart handling
+    if (!req.body || req.body.length === 0) {
+      return res.status(400).json({ error: 'File content required' });
+    }
+
+    const { sessionState } = await import('./boot.js');
+    const key = sessionState.encryptionKey;
+
+    const fileId = await saveEncryptedFile(req.body, key, req.query.filename || 'unnamed');
+    res.status(201).json({ fileId });
+  } catch (err) {
+    console.error('[file upload] failed:', err.message);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+// File download endpoint: GET /api/files/:fileId
+app.get('/api/files/:fileId', async (req, res) => {
+  try {
+    const { loadEncryptedFile } = await import('./fileStorage.js');
+    const { sessionState } = await import('./boot.js');
+    const key = sessionState.encryptionKey;
+
+    const { filename, buffer } = loadEncryptedFile(req.params.fileId, key);
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('[file download] failed:', err.message);
+    res.status(404).json({ error: 'File not found' });
+  }
 });
 
 // Start server

@@ -45,8 +45,11 @@ export async function setupNewVault(password, metaPath, dbPath) {
   const { salt, kdfParams } = await setupVault(password, metaPath);
 
   // Create an empty encrypted database
-  const { key } = await import('./crypto.js').then(m => m.deriveKeyFromPassword(password, Buffer.from(salt, 'base64')));
-  const { initSqlJs } = await import('sql.js').then(m => ({ initSqlJs: m.default }));
+  const { deriveKeyFromPassword } = await import('./crypto.js');
+  const keyResult = await deriveKeyFromPassword(password, Buffer.from(salt, 'base64'));
+  const key = keyResult.key;
+  
+  const initSqlJs = (await import('sql.js')).default;
   const SQL = await initSqlJs();
   const db = new SQL.Database();
   initializeSchema(db);

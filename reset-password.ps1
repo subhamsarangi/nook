@@ -1,9 +1,9 @@
 # Reset vault password script
-# Current password: mynewpassword123
+# Current password: testpass123
 
 $ErrorActionPreference = "Stop"
 $baseUrl = "http://localhost:3001"
-$currentPassword = "mynewpassword123"
+$currentPassword = "testpass123"
 
 Write-Host "=== Nook Vault Password Reset ===" -ForegroundColor Cyan
 

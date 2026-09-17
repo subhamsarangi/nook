@@ -1,0 +1,332 @@
+import React, { useState, useEffect } from 'react';
+import SchemaBuilder from './SchemaBuilder';
+import './EntityDetailPage.css';
+
+export default function EntityDetailPage({ entityId, onBack }) {
+  const [entity, setEntity] = useState(null);
+  const [subEntities, setSubEntities] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formDesc, setFormDesc] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [cascadeInfo, setCascadeInfo] = useState(null);
+  const [displayMode, setDisplayMode] = useState('list'); // 'list' or 'gallery' stub
+  const [selectedSubEntityForSchema, setSelectedSubEntityForSchema] = useState(null);
+
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+  useEffect(() => {
+    loadData();
+  }, [entityId]);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // Load entity
+      const entityRes = await fetch(`${apiUrl}/api/entities/${entityId}`);
+      const entityData = await entityRes.json();
+      setEntity(entityData);
+
+      // Load sub-entities
+      const subRes = await fetch(`${apiUrl}/api/entities/${entityId}/sub-entities`);
+      const subData = await subRes.json();
+      setSubEntities(Array.isArray(subData) ? subData : []);
+    } catch (err) {
+      setError('Failed to load data: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!formName.trim()) {
+      setError('Sub-entity name required');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/api/entities/${entityId}/sub-entities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName.trim(), description: formDesc.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+
+      setFormName('');
+      setFormDesc('');
+      setShowCreateForm(false);
+      await loadData();
+    } catch (err) {
+      setError('Create failed: ' + err.message);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!formName.trim()) {
+      setError('Sub-entity name required');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/api/sub-entities/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName.trim(), description: formDesc.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+
+      setEditingId(null);
+      setFormName('');
+      setFormDesc('');
+      await loadData();
+    } catch (err) {
+      setError('Update failed: ' + err.message);
+    }
+  };
+
+  const handleDeleteClick = async (id) => {
+    try {
+      const res = await fetch(`${apiUrl}/api/sub-entities/${id}/cascade-count`);
+      const data = await res.json();
+      setCascadeInfo(data);
+      setDeleteConfirm(id);
+    } catch (err) {
+      setError('Failed to load delete info: ' + err.message);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      const res = await fetch(`${apiUrl}/api/sub-entities/${deleteConfirm}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+
+      setDeleteConfirm(null);
+      setCascadeInfo(null);
+      await loadData();
+    } catch (err) {
+      setError('Delete failed: ' + err.message);
+    }
+  };
+
+  const handleEdit = (subEntity) => {
+    setEditingId(subEntity.id);
+    setFormName(subEntity.name);
+    setFormDesc(subEntity.description || '');
+    setShowCreateForm(false);
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setShowCreateForm(false);
+    setFormName('');
+    setFormDesc('');
+    setError('');
+  };
+
+  const handleEditSchema = (subEntity) => {
+    setSelectedSubEntityForSchema(subEntity);
+  };
+
+  const handleSchemaSaved = () => {
+    setSelectedSubEntityForSchema(null);
+    loadData();
+  };
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (!entity) {
+    return <div className="error-banner">Entity not found</div>;
+  }
+
+  // If editing schema for a sub-entity, show schema builder
+  if (selectedSubEntityForSchema) {
+    return (
+      <div className="entity-detail-page">
+        <div className="detail-header">
+          <div className="detail-header-left">
+            <h1>{entity.name}</h1>
+            <p className="entity-desc">Editing schema for "{selectedSubEntityForSchema.name}"</p>
+          </div>
+          <div className="detail-header-right">
+            <a className="back-link" onClick={onBack}>
+              ← Back to Entities
+            </a>
+          </div>
+        </div>
+
+        <SchemaBuilder
+          subEntity={selectedSubEntityForSchema}
+          onSchemaSaved={handleSchemaSaved}
+          onCancel={() => setSelectedSubEntityForSchema(null)}
+          apiUrl={apiUrl}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="entity-detail-page">
+      <div className="detail-header">
+        <div className="detail-header-left">
+          <h1>{entity.name}</h1>
+          {entity.description && <p className="entity-desc">{entity.description}</p>}
+        </div>
+        <div className="detail-header-right">
+          <a className="back-link" onClick={onBack}>
+            ← Back to Entities
+          </a>
+        </div>
+      </div>
+
+      {error && <div className="error-banner">{error}</div>}
+
+      <div className="section-header">
+        <h2>Sub-Entities</h2>
+        <div className="display-mode-toggle">
+          <button
+            className={`toggle-btn ${displayMode === 'list' ? 'active' : ''}`}
+            onClick={() => setDisplayMode('list')}
+          >
+            📋 List
+          </button>
+          <button
+            className={`toggle-btn ${displayMode === 'gallery' ? 'active' : ''}`}
+            onClick={() => setDisplayMode('gallery')}
+          >
+            🖼️ Gallery
+          </button>
+        </div>
+      </div>
+
+      {!showCreateForm && !editingId && (
+        <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
+          + New Sub-Entity
+        </button>
+      )}
+
+      {/* Create/Edit Form */}
+      {(showCreateForm || editingId) && (
+        <div className="form-container">
+          <form onSubmit={editingId ? handleUpdate : handleCreate}>
+            <h2>{editingId ? 'Edit Sub-Entity' : 'Create Sub-Entity'}</h2>
+
+            <div className="form-group">
+              <label>Name</label>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Sub-entity name"
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Description (optional)</label>
+              <textarea
+                value={formDesc}
+                onChange={(e) => setFormDesc(e.target.value)}
+                placeholder="Description"
+                rows={3}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" className="btn-primary">
+                {editingId ? 'Update' : 'Create'}
+              </button>
+              <button type="button" className="btn-secondary" onClick={handleCancel}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Delete Sub-Entity?</h2>
+            <p>This will also delete {cascadeInfo?.instances || 0} instance(s).</p>
+            <p className="warning">This action cannot be undone.</p>
+
+            <div className="modal-actions">
+              <button className="btn-danger" onClick={handleConfirmDelete}>
+                Delete
+              </button>
+              <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-Entity List */}
+      {subEntities.length === 0 ? (
+        <div className="empty-state">
+          <p>No sub-entities yet. Create one to get started.</p>
+        </div>
+      ) : (
+        <div className="sub-entity-list">
+          {subEntities.map((sub) => (
+            <div key={sub.id} className="sub-entity-card">
+              <div className="sub-entity-info">
+                <h3>{sub.name}</h3>
+                {sub.description && <p className="description">{sub.description}</p>}
+                <div className="meta">
+                  <span className={`schema-status ${sub.schemaFinalized ? 'finalized' : ''}`}>
+                    {sub.schemaFinalized ? '✓ Schema Finalized' : '⚙️ Schema Pending'}
+                  </span>
+                  <span>
+                    {new Date(sub.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="sub-entity-actions">
+                <button className="btn-link" onClick={() => handleEditSchema(sub)}>
+                  Schema
+                </button>
+                <button className="btn-link" onClick={() => handleEdit(sub)}>
+                  Edit
+                </button>
+                <button
+                  className="btn-link btn-danger"
+                  onClick={() => handleDeleteClick(sub.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

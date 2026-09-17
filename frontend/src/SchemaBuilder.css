@@ -1,0 +1,400 @@
+.schema-builder {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 2rem;
+}
+
+.schema-builder h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.schema-status-banner {
+  background: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.schema-status-banner.pending {
+  background: #e8f4f8;
+  color: #016a7d;
+}
+
+.schema-empty-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.field-item {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.field-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.field-item.dragging {
+  opacity: 0.6;
+  background: #f0f0f0;
+}
+
+.field-info {
+  flex: 1;
+}
+
+.field-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #333;
+}
+
+.field-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.field-type-badge {
+  background: #e8f4f8;
+  color: #016a7d;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.field-required-badge {
+  background: #ffeaa7;
+  color: #d63031;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.field-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-icon {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.btn-icon.danger:hover {
+  border-color: #e74c3c;
+  background: #ffe8e8;
+}
+
+.add-field-form {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.add-field-form h4 {
+  margin-top: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row.full {
+  grid-template-columns: 1fr;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-group.checkbox input {
+  margin: 0;
+  width: auto;
+}
+
+.form-group.checkbox label {
+  margin: 0;
+  font-weight: 500;
+}
+
+.dropdown-options-container {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.dropdown-options-container h5 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.dropdown-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.dropdown-option-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dropdown-option-item input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.dropdown-option-item button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.dropdown-option-item button:hover {
+  background: #c0392b;
+}
+
+.add-option-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.add-option-btn:hover {
+  background: #5568d3;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #5568d3;
+}
+
+.btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background: #d0d0d0;
+}
+
+.schema-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #ddd;
+}
+
+.schema-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-finalize {
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-finalize:hover {
+  background: #229954;
+}
+
+.btn-finalize:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #d0d0d0;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-content p {
+  margin: 1rem 0;
+}
+
+.warning {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modal-actions button {
+  flex: 1;
+}

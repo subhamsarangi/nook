@@ -1,0 +1,276 @@
+.instance-detail-page {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 1rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.page-header .breadcrumb {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.page-header .breadcrumb a {
+  color: #667eea;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.page-header .breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.error-banner {
+  background: #fadbd8;
+  color: #c0392b;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.metadata {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.metadata-item {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+.metadata-item:last-child {
+  margin-bottom: 0;
+}
+
+.metadata-item .label {
+  font-weight: 600;
+  min-width: 80px;
+  color: #333;
+}
+
+.metadata-item .mono {
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #666;
+  word-break: break-all;
+}
+
+.fields-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.field-block {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field-block:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.field-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  flex: 1;
+}
+
+.field-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.field-type {
+  background: #e8f4f8;
+  color: #016a7d;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.required {
+  background: #ffeaa7;
+  color: #d63031;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.field-value {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  word-break: break-word;
+}
+
+.value-empty {
+  color: #ccc;
+  font-style: italic;
+}
+
+.value-text {
+  color: #333;
+}
+
+.value-boolean {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.value-boolean.true {
+  background: #d4edda;
+  color: #155724;
+}
+
+.value-boolean.false {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.value-color {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.value-url {
+  color: #667eea;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.value-url:hover {
+  text-decoration: underline;
+}
+
+.value-long-text {
+  margin: 0;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.value-image {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.value-image img {
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.file-link,
+.download-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.file-link:hover,
+.download-btn:hover {
+  background: #5568d3;
+}
+
+.file-link:disabled,
+.download-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Responsive grid */
+@media (max-width: 768px) {
+  .fields-container {
+    grid-template-columns: 1fr;
+  }
+
+  .field-header {
+    flex-direction: column;
+  }
+
+  .field-meta {
+    width: 100%;
+  }
+}

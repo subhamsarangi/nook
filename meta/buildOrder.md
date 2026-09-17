@@ -48,14 +48,14 @@ progress as you build.
 
 ## Phase 3 — Lock Screen & Session UX
 
-- [ ] 3.1 Password/unlock screen (frontend), calls verify endpoint from 2.3
+- [x] 3.1 Password/unlock screen (frontend), calls verify endpoint from 2.3
       - `autocomplete="new-password"` (or `off`) on the input — don't let the browser's own password store capture it
       - Clear the password from React state immediately after the request is sent
       - Show generic "incorrect password" only — never reveal *which* internal step failed (KDF/verifier/DB open)
-- [ ] 3.2 Global session countdown component (header/nav, visible on all pages), polls 2.9
-- [ ] 3.3 Auto-redirect to lock screen on expiry
-- [ ] 3.4 Backend rejects API calls on expired session (don't trust frontend alone)
-- [ ] 3.5 Surface backoff delay from 2.11 on the lock screen (e.g. "try again in 4s") so failed attempts are legible, not just silently rejected
+- [x] 3.2 Global session countdown component (header/nav, visible on all pages), polls 2.9
+- [x] 3.3 Auto-redirect to lock screen on expiry
+- [x] 3.4 Backend rejects API calls on expired session (don't trust frontend alone)
+- [x] 3.5 Surface backoff delay from 2.11 on the lock screen (e.g. "try again in 4s") so failed attempts are legible, not just silently rejected
 
 **Depends on:** 2.3 (for 3.1), 2.8–2.9 (for 3.2–3.4), 2.10–2.11 (for 3.5)
 
@@ -63,11 +63,11 @@ progress as you build.
 
 ## Phase 4 — Entities & Sub-Entities (core data model)
 
-- [ ] 4.1 DB schema/migrations: `entities`, `sub_entities`, `instances` tables
-- [ ] 4.2 Entity CRUD API (create/list/get/update/delete + cascade-count preflight)
-- [ ] 4.3 SubEntity CRUD API (scoped to an Entity; enforce "≥1 sub-entity per entity")
-- [ ] 4.4 Home page: Entity list (create/edit/delete)
-- [ ] 4.5 Entity detail page: Sub-Entity list (create/edit/delete) + display-mode toggle (UI stub only — logic comes in Phase 9)
+- [x] 4.1 DB schema/migrations: `entities`, `sub_entities`, `instances` tables
+- [x] 4.2 Entity CRUD API (create/list/get/update/delete + cascade-count preflight)
+- [x] 4.3 SubEntity CRUD API (scoped to an Entity; enforce "≥1 sub-entity per entity")
+- [x] 4.4 Home page: Entity list (create/edit/delete)
+- [x] 4.5 Entity detail page: Sub-Entity list (create/edit/delete) + display-mode toggle (UI stub only — logic comes in Phase 9)
 
 **Depends on:** Phase 2 (needs unlocked DB to read/write)
 **Chain:** 4.1 → 4.2 → 4.3 → (4.4, 4.5 parallel)
@@ -77,10 +77,10 @@ Note: 4.2 before 4.3 — sub-entities reference entities.
 
 ## Phase 5 — Instance Schema Builder
 
-- [ ] 5.1 Field-type registry: short_text, long_text, date, time, datetime, url, dropdown, checkbox, color, image, file — with per-type validation rules
+- [x] 5.1 Field-type registry: short_text, long_text, date, time, datetime, url, dropdown, checkbox, color, image, file — with per-type validation rules
       *(pure logic/types — no DB or auth dependency; can be built anytime, even in Phase 1 if convenient)*
-- [ ] 5.2 Schema builder UI on SubEntity detail page (add/reorder/remove fields, dropdown options, required flags — enforce image/file always-optional)
-- [ ] 5.3 "Finalize schema" action — explicit lock; enforce immutability at API layer after finalize
+- [x] 5.2 Schema builder UI on SubEntity detail page (add/reorder/remove fields, dropdown options, required flags — enforce image/file always-optional)
+- [x] 5.3 "Finalize schema" action — explicit lock; enforce immutability at API layer after finalize
 
 **Depends on:** 4.3 (needs a sub-entity to attach a schema to)
 **Chain:** 5.1 → 5.2 → 5.3
@@ -89,11 +89,11 @@ Note: 4.2 before 4.3 — sub-entities reference entities.
 
 ## Phase 6 — Instances: CRUD
 
-- [ ] 6.1 Encrypted file storage: save uploads as encrypted blobs (AES-256-GCM or XChaCha20-Poly1305), decrypt-on-demand when served
-- [ ] 6.2 Instance create/edit form, dynamically rendered from finalized schema (incl. image/file fields)
-- [ ] 6.3 Instance API (create/get/update/delete), with file cleanup on delete/replace
-- [ ] 6.4 Instance list page — default rendering (no custom layout yet)
-- [ ] 6.5 Instance detail page — default rendering
+- [x] 6.1 Encrypted file storage: save uploads as encrypted blobs (AES-256-GCM or XChaCha20-Poly1305), decrypt-on-demand when served
+- [x] 6.2 Instance create/edit form, dynamically rendered from finalized schema (incl. image/file fields)
+- [x] 6.3 Instance API (create/get/update/delete), with file cleanup on delete/replace
+- [x] 6.4 Instance list page — default rendering (no custom layout yet)
+- [x] 6.5 Instance detail page — default rendering
 
 **Depends on:** 5.3 (schema must be finalized before instances can be created against it)
 **Chain:** 6.1 → 6.2 → 6.3 → (6.4, 6.5 parallel)
