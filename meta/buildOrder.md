@@ -103,10 +103,10 @@ Note: 6.1 must exist (even stubbed) before 6.2, since the form needs somewhere t
 
 ## Phase 7 — Bulk Operations
 
-- [ ] 7.1 Bulk-create via JSON: validate against finalized schema, **excluding image/file fields** (URL fields allowed), all-or-nothing transaction
-- [ ] 7.2 Bulk-create UI (paste/upload JSON, preview, validation errors before commit)
-- [ ] 7.3 Bulk delete — instances (multi-select + confirm)
-- [ ] 7.4 Bulk delete — sub-entities and entities (multi-select + cascade-aware confirm)
+- [x] 7.1 Bulk-create via JSON: validate against finalized schema, **excluding image/file fields** (URL fields allowed), all-or-nothing transaction
+- [x] 7.2 Bulk-create UI (paste/upload JSON, preview, validation errors before commit)
+- [x] 7.3 Bulk delete — instances (multi-select + confirm)
+- [x] 7.4 Bulk delete — sub-entities and entities (multi-select + cascade-aware confirm)
 
 **Depends on:** 5.3 (for 7.1), 6.3 (for 7.3), 4.2–4.3 (for 7.4)
 **Chain:** 7.1 → 7.2 (independent of 7.3/7.4)

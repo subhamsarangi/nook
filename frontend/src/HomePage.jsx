@@ -13,6 +13,9 @@ export default function HomePage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [cascadeInfo, setCascadeInfo] = useState(null);
   const [selectedEntityId, setSelectedEntityId] = useState(null);
+  const [selectedEntityIds, setSelectedEntityIds] = useState(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkCascadeInfo, setBulkCascadeInfo] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -138,6 +141,65 @@ export default function HomePage() {
     setError('');
   };
 
+  const toggleSelectEntity = (entityId) => {
+    const newSelected = new Set(selectedEntityIds);
+    if (newSelected.has(entityId)) {
+      newSelected.delete(entityId);
+    } else {
+      newSelected.add(entityId);
+    }
+    setSelectedEntityIds(newSelected);
+  };
+
+  const toggleSelectAllEntities = () => {
+    if (selectedEntityIds.size === entities.length) {
+      setSelectedEntityIds(new Set());
+    } else {
+      setSelectedEntityIds(new Set(entities.map((e) => e.id)));
+    }
+  };
+
+  const handleBulkDeleteEntitiesClick = async () => {
+    if (selectedEntityIds.size === 0) return;
+
+    try {
+      // Load cascade info for all selected
+      const cascadePromises = Array.from(selectedEntityIds).map((id) =>
+        fetch(`${apiUrl}/api/entities/${id}/cascade-count`).then((r) => r.json())
+      );
+      const cascadeData = await Promise.all(cascadePromises);
+      const totalSubEntities = cascadeData.reduce((sum, c) => sum + (c.subEntities || 0), 0);
+      const totalInstances = cascadeData.reduce((sum, c) => sum + (c.instances || 0), 0);
+
+      setBulkCascadeInfo({ count: selectedEntityIds.size, subEntities: totalSubEntities, instances: totalInstances });
+      setBulkDeleteConfirm(true);
+    } catch (err) {
+      setError('Failed to load delete info: ' + err.message);
+    }
+  };
+
+  const handleConfirmBulkDeleteEntities = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/bulk-delete-entities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entityIds: Array.from(selectedEntityIds) }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Delete failed');
+      }
+
+      setBulkDeleteConfirm(false);
+      setBulkCascadeInfo(null);
+      setSelectedEntityIds(new Set());
+      await loadEntities();
+    } catch (err) {
+      setError('Bulk delete failed: ' + err.message);
+    }
+  };
+
   // If viewing entity detail, show that page
   if (selectedEntityId) {
     return (
@@ -203,6 +265,30 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Bulk delete confirmation */}
+      {bulkDeleteConfirm && bulkCascadeInfo && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Delete {bulkCascadeInfo.count} Entity(ies)?</h2>
+            <p>This will also delete:</p>
+            <ul>
+              <li>{bulkCascadeInfo.subEntities} sub-entities</li>
+              <li>{bulkCascadeInfo.instances} instances</li>
+            </ul>
+            <p className="warning">This action cannot be undone.</p>
+
+            <div className="modal-actions">
+              <button className="btn-danger" onClick={handleConfirmBulkDeleteEntities}>
+                Delete {bulkCascadeInfo.count} Entity(ies)
+              </button>
+              <button className="btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="modal-overlay">
@@ -235,32 +321,50 @@ export default function HomePage() {
           <p>No entities yet. Create one to get started.</p>
         </div>
       ) : (
-        <div className="entity-list">
-          {entities.map((entity) => (
-            <div key={entity.id} className="entity-card">
-              <div className="entity-info">
-                <h3>{entity.name}</h3>
-                {entity.description && <p className="description">{entity.description}</p>}
-                <small className="timestamp">Created {new Date(entity.createdAt).toLocaleDateString()}</small>
-              </div>
-
-              <div className="entity-actions">
-                <button className="btn-link" onClick={() => setSelectedEntityId(entity.id)}>
-                  View
-                </button>
-                <button className="btn-link" onClick={() => handleEdit(entity)}>
-                  Edit
-                </button>
-                <button
-                  className="btn-link btn-danger"
-                  onClick={() => handleDeleteClick(entity.id)}
-                >
-                  Delete
-                </button>
-              </div>
+        <>
+          {selectedEntityIds.size > 0 && (
+            <div className="bulk-action-bar">
+              <p>{selectedEntityIds.size} selected</p>
+              <button className="btn-danger" onClick={handleBulkDeleteEntitiesClick}>
+                🗑️ Delete Selected
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+
+          <div className="entity-list">
+            {entities.map((entity) => (
+              <div key={entity.id} className={`entity-card ${selectedEntityIds.has(entity.id) ? 'card-selected' : ''}`}>
+                <input
+                  type="checkbox"
+                  className="entity-checkbox"
+                  checked={selectedEntityIds.has(entity.id)}
+                  onChange={() => toggleSelectEntity(entity.id)}
+                />
+
+                <div className="entity-info">
+                  <h3>{entity.name}</h3>
+                  {entity.description && <p className="description">{entity.description}</p>}
+                  <small className="timestamp">Created {new Date(entity.createdAt).toLocaleDateString()}</small>
+                </div>
+
+                <div className="entity-actions">
+                  <button className="btn-link" onClick={() => setSelectedEntityId(entity.id)}>
+                    View
+                  </button>
+                  <button className="btn-link" onClick={() => handleEdit(entity)}>
+                    Edit
+                  </button>
+                  <button
+                    className="btn-link btn-danger"
+                    onClick={() => handleDeleteClick(entity.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

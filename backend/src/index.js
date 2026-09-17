@@ -433,6 +433,55 @@ app.delete('/api/instances/:id', async (req, res) => {
   handleDeleteInstance(req, res, db, key);
 });
 
+// Bulk operations endpoints
+app.post('/api/sub-entities/:subEntityId/bulk-create', async (req, res) => {
+  const { handleBulkCreateInstances } = await import('./bulkOps.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleBulkCreateInstances(req, res, db, key, DB_PATH);
+});
+
+app.post('/api/bulk-delete-instances', async (req, res) => {
+  const { handleBulkDeleteInstances } = await import('./bulkOps.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleBulkDeleteInstances(req, res, db, key, DB_PATH);
+});
+
+app.post('/api/bulk-delete-sub-entities', async (req, res) => {
+  const { handleBulkDeleteSubEntities } = await import('./bulkOps.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleBulkDeleteSubEntities(req, res, db, key, DB_PATH);
+});
+
+app.post('/api/bulk-delete-entities', async (req, res) => {
+  const { handleBulkDeleteEntities } = await import('./bulkOps.js');
+  const db = getDatabase();
+  if (!db) {
+    return res.status(401).json({ error: 'Vault is locked' });
+  }
+  const { sessionState } = await import('./boot.js');
+  const key = sessionState.encryptionKey;
+  const DB_PATH = process.env.DB_PATH || './vault.db';
+  handleBulkDeleteEntities(req, res, db, key, DB_PATH);
+});
+
 // File upload endpoint: POST /api/files/upload
 // Expects: multipart/form-data with file field
 app.post('/api/files/upload', async (req, res) => {

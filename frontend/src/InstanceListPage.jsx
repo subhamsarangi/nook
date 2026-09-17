@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InstanceForm from './InstanceForm';
+import BulkCreateUI from './BulkCreateUI';
 import './InstanceListPage.css';
 
 export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
@@ -7,8 +8,11 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [editingInstance, setEditingInstance] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     loadInstances();
@@ -98,6 +102,51 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
     }
   };
 
+  const toggleSelectInstance = (instanceId) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(instanceId)) {
+      newSelected.delete(instanceId);
+    } else {
+      newSelected.add(instanceId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === instances.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(instances.map((i) => i.id)));
+    }
+  };
+
+  const handleBulkDeleteClick = () => {
+    if (selectedIds.size > 0) {
+      setBulkDeleteConfirm(true);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/bulk-delete-instances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instanceIds: Array.from(selectedIds) }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Delete failed');
+      }
+
+      setBulkDeleteConfirm(false);
+      setSelectedIds(new Set());
+      await loadInstances();
+    } catch (err) {
+      setError('Bulk delete failed: ' + err.message);
+    }
+  };
+
   const renderFieldValue = (value, fieldName) => {
     if (value === null || value === undefined) {
       return <span style={{ color: '#ccc' }}>—</span>;
@@ -141,6 +190,32 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
     );
   }
 
+  if (showBulkCreate) {
+    return (
+      <div className="instance-list-page">
+        <div className="page-header">
+          <div>
+            <h1>📦 Bulk Create Instances</h1>
+            <p className="breadcrumb">
+              <a onClick={onBack}>← Back to Entities</a> / {subEntity.name}
+            </p>
+          </div>
+        </div>
+
+        <BulkCreateUI
+          subEntityId={subEntity.id}
+          schema={subEntity.schema ? JSON.parse(subEntity.schema) : []}
+          onSuccess={(result) => {
+            setShowBulkCreate(false);
+            setError('');
+            loadInstances();
+          }}
+          onCancel={() => setShowBulkCreate(false)}
+        />
+      </div>
+    );
+  }
+
   if (editingInstance) {
     return (
       <div className="instance-list-page">
@@ -177,10 +252,33 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
           <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
             + New Instance
           </button>
+          <button className="btn-secondary" onClick={() => setShowBulkCreate(true)}>
+            📦 Bulk Create
+          </button>
         </div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
+
+      {/* Bulk delete confirmation modal */}
+      {bulkDeleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Delete {selectedIds.size} Instance(s)?</h2>
+            <p>This action cannot be undone.</p>
+            <p className="warning">All files in these instances will be deleted.</p>
+
+            <div className="modal-actions">
+              <button className="btn-danger" onClick={handleConfirmBulkDelete}>
+                Delete {selectedIds.size} Instance(s)
+              </button>
+              <button className="btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {deleteConfirm && (
@@ -208,48 +306,73 @@ export default function InstanceListPage({ subEntity, onBack, apiUrl }) {
           <p>No instances yet. Create one to get started.</p>
         </div>
       ) : (
-        <table className="instance-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Data</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {instances.map((instance) => (
-              <tr key={instance.id}>
-                <td className="cell-id" title={instance.id}>
-                  {instance.id}
-                </td>
-                <td className="cell-data">
-                  {Object.entries(instance.data)
-                    .slice(0, 2)
-                    .map(([key, val]) => `${key}: ${renderFieldValue(val, key)}`)
-                    .join(' • ')}
-                </td>
-                <td className="cell-timestamp">
-                  {new Date(instance.createdAt).toLocaleDateString()}
-                </td>
-                <td className="cell-actions">
-                  <button
-                    className="btn-link"
-                    onClick={() => setEditingInstance(instance)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn-link btn-danger"
-                    onClick={() => handleDeleteClick(instance)}
-                  >
-                    Delete
-                  </button>
-                </td>
+        <>
+          {selectedIds.size > 0 && (
+            <div className="bulk-action-bar">
+              <p>{selectedIds.size} selected</p>
+              <button className="btn-danger" onClick={handleBulkDeleteClick}>
+                🗑️ Delete Selected
+              </button>
+            </div>
+          )}
+
+          <table className="instance-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === instances.length && instances.length > 0}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
+                <th>ID</th>
+                <th>Data</th>
+                <th>Created</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {instances.map((instance) => (
+                <tr key={instance.id} className={selectedIds.has(instance.id) ? 'row-selected' : ''}>
+                  <td style={{ width: '40px' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(instance.id)}
+                      onChange={() => toggleSelectInstance(instance.id)}
+                    />
+                  </td>
+                  <td className="cell-id" title={instance.id}>
+                    {instance.id}
+                  </td>
+                  <td className="cell-data">
+                    {Object.entries(instance.data)
+                      .slice(0, 2)
+                      .map(([key, val]) => `${key}: ${renderFieldValue(val, key)}`)
+                      .join(' • ')}
+                  </td>
+                  <td className="cell-timestamp">
+                    {new Date(instance.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="cell-actions">
+                    <button
+                      className="btn-link"
+                      onClick={() => setEditingInstance(instance)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn-link btn-danger"
+                      onClick={() => handleDeleteClick(instance)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </div>
   );

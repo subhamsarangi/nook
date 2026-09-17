@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SchemaBuilder from './SchemaBuilder';
+import InstanceListPage from './InstanceListPage';
 import './EntityDetailPage.css';
 
 export default function EntityDetailPage({ entityId, onBack }) {
@@ -15,6 +16,10 @@ export default function EntityDetailPage({ entityId, onBack }) {
   const [cascadeInfo, setCascadeInfo] = useState(null);
   const [displayMode, setDisplayMode] = useState('list'); // 'list' or 'gallery' stub
   const [selectedSubEntityForSchema, setSelectedSubEntityForSchema] = useState(null);
+  const [selectedSubEntityIds, setSelectedSubEntityIds] = useState(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkCascadeInfo, setBulkCascadeInfo] = useState(null);
+  const [selectedSubEntityForInstances, setSelectedSubEntityForInstances] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -154,12 +159,95 @@ export default function EntityDetailPage({ entityId, onBack }) {
     loadData();
   };
 
+  const toggleSelectSubEntity = (subEntityId) => {
+    const newSelected = new Set(selectedSubEntityIds);
+    if (newSelected.has(subEntityId)) {
+      newSelected.delete(subEntityId);
+    } else {
+      newSelected.add(subEntityId);
+    }
+    setSelectedSubEntityIds(newSelected);
+  };
+
+  const toggleSelectAllSubEntities = () => {
+    if (selectedSubEntityIds.size === subEntities.length) {
+      setSelectedSubEntityIds(new Set());
+    } else {
+      setSelectedSubEntityIds(new Set(subEntities.map((s) => s.id)));
+    }
+  };
+
+  const handleBulkDeleteSubEntitiesClick = async () => {
+    if (selectedSubEntityIds.size === 0) return;
+
+    try {
+      // Load cascade info for all selected
+      const cascadePromises = Array.from(selectedSubEntityIds).map((id) =>
+        fetch(`${apiUrl}/api/sub-entities/${id}/cascade-count`).then((r) => r.json())
+      );
+      const cascadeData = await Promise.all(cascadePromises);
+      const totalInstances = cascadeData.reduce((sum, c) => sum + (c.instances || 0), 0);
+
+      setBulkCascadeInfo({ count: selectedSubEntityIds.size, instances: totalInstances });
+      setBulkDeleteConfirm(true);
+    } catch (err) {
+      setError('Failed to load delete info: ' + err.message);
+    }
+  };
+
+  const handleConfirmBulkDeleteSubEntities = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/bulk-delete-sub-entities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subEntityIds: Array.from(selectedSubEntityIds) }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Delete failed');
+      }
+
+      setBulkDeleteConfirm(false);
+      setBulkCascadeInfo(null);
+      setSelectedSubEntityIds(new Set());
+      await loadData();
+    } catch (err) {
+      setError('Bulk delete failed: ' + err.message);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
 
   if (!entity) {
     return <div className="error-banner">Entity not found</div>;
+  }
+
+  // If viewing instances for a sub-entity, show that page
+  if (selectedSubEntityForInstances) {
+    return (
+      <div className="entity-detail-page">
+        <div className="detail-header">
+          <div className="detail-header-left">
+            <h1>{entity.name}</h1>
+            <p className="entity-desc">Instances for "{selectedSubEntityForInstances.name}"</p>
+          </div>
+          <div className="detail-header-right">
+            <a className="back-link" onClick={() => setSelectedSubEntityForInstances(null)}>
+              ← Back to Sub-Entities
+            </a>
+          </div>
+        </div>
+
+        <InstanceListPage
+          subEntity={selectedSubEntityForInstances}
+          onBack={() => setSelectedSubEntityForInstances(null)}
+          apiUrl={apiUrl}
+        />
+      </div>
+    );
   }
 
   // If editing schema for a sub-entity, show schema builder
@@ -267,6 +355,26 @@ export default function EntityDetailPage({ entityId, onBack }) {
         </div>
       )}
 
+      {/* Bulk delete confirmation */}
+      {bulkDeleteConfirm && bulkCascadeInfo && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Delete {bulkCascadeInfo.count} Sub-Entity(ies)?</h2>
+            <p>This will also delete {bulkCascadeInfo.instances} instance(s) and all associated files.</p>
+            <p className="warning">This action cannot be undone.</p>
+
+            <div className="modal-actions">
+              <button className="btn-danger" onClick={handleConfirmBulkDeleteSubEntities}>
+                Delete {bulkCascadeInfo.count} Sub-Entity(ies)
+              </button>
+              <button className="btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="modal-overlay">
@@ -293,39 +401,60 @@ export default function EntityDetailPage({ entityId, onBack }) {
           <p>No sub-entities yet. Create one to get started.</p>
         </div>
       ) : (
-        <div className="sub-entity-list">
-          {subEntities.map((sub) => (
-            <div key={sub.id} className="sub-entity-card">
-              <div className="sub-entity-info">
-                <h3>{sub.name}</h3>
-                {sub.description && <p className="description">{sub.description}</p>}
-                <div className="meta">
-                  <span className={`schema-status ${sub.schemaFinalized ? 'finalized' : ''}`}>
-                    {sub.schemaFinalized ? '✓ Schema Finalized' : '⚙️ Schema Pending'}
-                  </span>
-                  <span>
-                    {new Date(sub.createdAt).toLocaleDateString()}
-                  </span>
+        <>
+          {selectedSubEntityIds.size > 0 && (
+            <div className="bulk-action-bar">
+              <p>{selectedSubEntityIds.size} selected</p>
+              <button className="btn-danger" onClick={handleBulkDeleteSubEntitiesClick}>
+                🗑️ Delete Selected
+              </button>
+            </div>
+          )}
+
+          <div className="sub-entity-list">
+            {subEntities.map((sub) => (
+              <div key={sub.id} className={`sub-entity-card ${selectedSubEntityIds.has(sub.id) ? 'card-selected' : ''}`}>
+                <input
+                  type="checkbox"
+                  className="sub-entity-checkbox"
+                  checked={selectedSubEntityIds.has(sub.id)}
+                  onChange={() => toggleSelectSubEntity(sub.id)}
+                />
+
+                <div className="sub-entity-info">
+                  <h3>{sub.name}</h3>
+                  {sub.description && <p className="description">{sub.description}</p>}
+                  <div className="meta">
+                    <span className={`schema-status ${sub.schemaFinalized ? 'finalized' : ''}`}>
+                      {sub.schemaFinalized ? '✓ Schema Finalized' : '⚙️ Schema Pending'}
+                    </span>
+                    <span>
+                      {new Date(sub.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="sub-entity-actions">
+                  <button className="btn-link" onClick={() => setSelectedSubEntityForInstances(sub)}>
+                    Instances
+                  </button>
+                  <button className="btn-link" onClick={() => handleEditSchema(sub)}>
+                    Schema
+                  </button>
+                  <button className="btn-link" onClick={() => handleEdit(sub)}>
+                    Edit
+                  </button>
+                  <button
+                    className="btn-link btn-danger"
+                    onClick={() => handleDeleteClick(sub.id)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
-
-              <div className="sub-entity-actions">
-                <button className="btn-link" onClick={() => handleEditSchema(sub)}>
-                  Schema
-                </button>
-                <button className="btn-link" onClick={() => handleEdit(sub)}>
-                  Edit
-                </button>
-                <button
-                  className="btn-link btn-danger"
-                  onClick={() => handleDeleteClick(sub.id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

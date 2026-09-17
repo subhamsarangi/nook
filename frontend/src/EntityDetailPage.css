@@ -49,6 +49,38 @@
   margin-bottom: 1rem;
 }
 
+.bulk-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #e8f5e9;
+  border: 1px solid #81c784;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.bulk-action-bar p {
+  margin: 0;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.bulk-action-bar button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.bulk-action-bar button:hover {
+  background: #c0392b;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -101,10 +133,25 @@
   flex-direction: column;
   gap: 1rem;
   transition: box-shadow 0.2s;
+  min-height: 150px;
 }
 
 .sub-entity-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sub-entity-card.card-selected {
+  background: #e8f5e9;
+  border-color: #81c784;
+}
+
+.sub-entity-checkbox {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.sub-entity-info {
+  flex: 1;
 }
 
 .sub-entity-info h3 {
@@ -145,6 +192,8 @@
 .sub-entity-actions {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .btn-primary,
