@@ -115,10 +115,10 @@ Note: 6.1 must exist (even stubbed) before 6.2, since the form needs somewhere t
 
 ## Phase 8 — Confirmation & Delete Safety
 
-- [ ] 8.1 Shared `<ConfirmDeleteDialog>` component with cascade-count preflight (counts entities/sub-entities/instances affected)
-- [ ] 8.2 Wire dialog into every delete action — single + bulk, all levels (replace any ad-hoc confirms used earlier)
-- [ ] 8.3 File cleanup as part of cascade deletes (transactional or immediately-following step)
-- [ ] 8.4 Orphan file sweep (on-demand button first; automate later if desired)
+- [x] 8.1 Shared `<ConfirmDeleteDialog>` component with cascade-count preflight (counts entities/sub-entities/instances affected)
+- [x] 8.2 Wire dialog into every delete action — single + bulk, all levels (replace any ad-hoc confirms used earlier)
+- [x] 8.3 File cleanup as part of cascade deletes (transactional or immediately-following step)
+- [x] 8.4 Orphan file sweep (on-demand button first; automate later if desired)
 
 **Depends on:** at least one deletable thing existing (6.3, 7.3, or 7.4 started) for 8.1; needs 8.1 before 8.2
 **Chain:** 8.1 → 8.2; 6.1 → 8.3 → 8.4 (separate sub-chain)

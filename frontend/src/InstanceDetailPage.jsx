@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './InstanceDetailPage.css';
 
 export default function InstanceDetailPage({ instance, subEntity, entity, entityId, subEntityId, onBack, apiUrl }) {
@@ -7,6 +8,8 @@ export default function InstanceDetailPage({ instance, subEntity, entity, entity
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [downloadingFile, setDownloadingFile] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -157,18 +160,65 @@ export default function InstanceDetailPage({ instance, subEntity, entity, entity
     fieldMap[f.name] = f;
   });
 
+  const getFileCount = () => {
+    if (!instanceData || !instanceData.data || !Array.isArray(schema)) return 0;
+    let count = 0;
+    schema.forEach((field) => {
+      if ((field.type === 'image' || field.type === 'file') && instanceData.data[field.name]) {
+        count++;
+      }
+    });
+    return count;
+  };
+
+  const handleDeleteInstance = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/instances/${instanceData.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Delete failed');
+      }
+
+      setDeleteConfirm(false);
+      navigate(`/entities/${entityId}/sub-entities/${subEntityId}`);
+    } catch (err) {
+      setError('Delete failed: ' + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="instance-detail-page">
       <div className="page-header">
         <div>
           <h1>🔍 Instance Details</h1>
           <p className="breadcrumb">
-            <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / <a onClick={() => navigate(`/entities/${entityId}/sub-entities/${subEntityId}`)}>{subEntity?.name || 'Sub-Entity'}</a> / ID: {instance?.id}
+            <a onClick={() => navigate('/')}>← Entities</a> / <a onClick={() => navigate(`/entities/${entityId}`)}>{entity?.name || 'Entity'}</a> / <a onClick={() => navigate(`/entities/${entityId}/sub-entities/${subEntityId}`)}>{subEntity?.name || 'Sub-Entity'}</a> / ID: {instanceData?.id}
           </p>
+        </div>
+        <div className="header-actions">
+          <button className="btn-danger" onClick={() => setDeleteConfirm(true)}>
+            🗑️ Delete Instance
+          </button>
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      <ConfirmDeleteDialog
+        isOpen={deleteConfirm}
+        itemType="Instance"
+        itemName={`ID: ${instanceData.id.substring(0, 8)}...`}
+        cascadeInfo={{ files: getFileCount() }}
+        loading={deleting}
+        onConfirm={handleDeleteInstance}
+        onCancel={() => setDeleteConfirm(false)}
+      />
+
+      {!deleteConfirm && error && <div className="error-banner">{error}</div>}
 
       <div className="detail-container">
         <div className="metadata">

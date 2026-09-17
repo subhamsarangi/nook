@@ -524,6 +524,42 @@ app.get('/api/files/:fileId', async (req, res) => {
   }
 });
 
+// Check orphan files endpoint: GET /api/files/orphans
+app.get('/api/files/orphans', async (req, res) => {
+  try {
+    const { getOrphanStatus } = await import('./fileStorage.js');
+    const db = getDatabase();
+    if (!db) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+    const status = getOrphanStatus(db);
+    res.json(status);
+  } catch (err) {
+    console.error('[orphan status] failed:', err.message);
+    res.status(500).json({ error: 'Failed to get orphan status: ' + err.message });
+  }
+});
+
+// Sweep orphan files endpoint: POST /api/files/sweep-orphans
+app.post('/api/files/sweep-orphans', async (req, res) => {
+  try {
+    const { sweepOrphanFiles } = await import('./fileStorage.js');
+    const db = getDatabase();
+    if (!db) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+    const result = sweepOrphanFiles(db);
+    res.json({
+      deletedCount: result.deletedCount,
+      deletedFileIds: result.deletedFileIds,
+      message: `Cleaned up ${result.deletedCount} orphaned file(s)`,
+    });
+  } catch (err) {
+    console.error('[sweep orphans] failed:', err.message);
+    res.status(500).json({ error: 'Failed to sweep orphan files: ' + err.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`[backend] listening on http://localhost:${PORT}`);

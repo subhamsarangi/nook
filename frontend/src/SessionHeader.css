@@ -75,6 +75,32 @@
   background: #c0392b;
 }
 
+.sweep-btn {
+  background: #4a5568;
+  color: white;
+}
+
+.sweep-btn:hover {
+  background: #2d3748;
+}
+
 .time-text {
   font-family: 'Courier New', monospace;
+}
+
+.status-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1e293b;
+  color: white;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  z-index: 2000;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }

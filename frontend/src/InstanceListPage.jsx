@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InstanceForm from './InstanceForm';
 import BulkCreateUI from './BulkCreateUI';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './InstanceListPage.css';
 
 export default function InstanceListPage({ subEntity, entity, entityId, onBack, apiUrl }) {
@@ -14,6 +15,7 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -81,12 +83,45 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
     }
   };
 
+  const schema = subEntity?.schema
+    ? typeof subEntity.schema === 'string'
+      ? JSON.parse(subEntity.schema)
+      : subEntity.schema
+    : [];
+
+  const getInstanceFileCount = (inst) => {
+    if (!inst || !inst.data || !Array.isArray(schema)) return 0;
+    let count = 0;
+    schema.forEach((field) => {
+      if ((field.type === 'image' || field.type === 'file') && inst.data[field.name]) {
+        count++;
+      }
+    });
+    return count;
+  };
+
+  const getBulkInstancesFileCount = () => {
+    if (!instances || !Array.isArray(schema)) return 0;
+    let count = 0;
+    instances.forEach((inst) => {
+      if (selectedIds.has(inst.id) && inst.data) {
+        schema.forEach((field) => {
+          if ((field.type === 'image' || field.type === 'file') && inst.data[field.name]) {
+            count++;
+          }
+        });
+      }
+    });
+    return count;
+  };
+
   const handleDeleteClick = (instance) => {
     setDeleteConfirm(instance);
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirm) return;
+    setDeleting(true);
 
     try {
       const res = await fetch(`${apiUrl}/api/instances/${deleteConfirm.id}`, {
@@ -98,10 +133,16 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
         throw new Error(errData.error);
       }
 
+      if (editingInstance && editingInstance.id === deleteConfirm.id) {
+        setEditingInstance(null);
+      }
+
       setDeleteConfirm(null);
       await loadInstances();
     } catch (err) {
       setError('Delete failed: ' + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -130,6 +171,7 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
   };
 
   const handleConfirmBulkDelete = async () => {
+    setDeleting(true);
     try {
       const res = await fetch(`${apiUrl}/api/bulk-delete-instances`, {
         method: 'POST',
@@ -142,11 +184,17 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
         throw new Error(errData.error || 'Delete failed');
       }
 
+      if (editingInstance && selectedIds.has(editingInstance.id)) {
+        setEditingInstance(null);
+      }
+
       setBulkDeleteConfirm(false);
       setSelectedIds(new Set());
       await loadInstances();
     } catch (err) {
       setError('Bulk delete failed: ' + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -262,47 +310,29 @@ export default function InstanceListPage({ subEntity, entity, entityId, onBack, 
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {!deleteConfirm && !bulkDeleteConfirm && error && <div className="error-banner">{error}</div>}
 
       {/* Bulk delete confirmation modal */}
-      {bulkDeleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Delete {selectedIds.size} Instance(s)?</h2>
-            <p>This action cannot be undone.</p>
-            <p className="warning">All files in these instances will be deleted.</p>
-
-            <div className="modal-actions">
-              <button className="btn-danger" onClick={handleConfirmBulkDelete}>
-                Delete {selectedIds.size} Instance(s)
-              </button>
-              <button className="btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteDialog
+        isOpen={bulkDeleteConfirm}
+        itemType="Instance"
+        count={selectedIds.size}
+        cascadeInfo={{ files: getBulkInstancesFileCount() }}
+        loading={deleting}
+        onConfirm={handleConfirmBulkDelete}
+        onCancel={() => setBulkDeleteConfirm(false)}
+      />
 
       {/* Delete confirmation modal */}
-      {deleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Delete Instance?</h2>
-            <p>This action cannot be undone.</p>
-            <p className="warning">If this instance contains files, they will be deleted.</p>
-
-            <div className="modal-actions">
-              <button className="btn-danger" onClick={handleConfirmDelete}>
-                Delete
-              </button>
-              <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteDialog
+        isOpen={!!deleteConfirm}
+        itemType="Instance"
+        itemName={deleteConfirm?.id ? `ID: ${deleteConfirm.id.substring(0, 8)}...` : undefined}
+        cascadeInfo={{ files: getInstanceFileCount(deleteConfirm) }}
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
       {/* Instances table */}
       {instances.length === 0 ? (

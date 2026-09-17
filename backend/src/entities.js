@@ -1,7 +1,7 @@
 /**
-/**
  * Entity CRUD operations
  */
+import { deleteFiles } from './fileStorage.js';
 
 /**
  * Generate ID
@@ -81,8 +81,49 @@ export function updateEntity(db, id, name, description = '') {
 }
 
 /**
+ * Extract all file IDs for instances belonging to an entity's sub-entities
+ */
+export function getEntityFiles(db, entityId) {
+  const fileIds = [];
+
+  const subStmt = db.prepare('SELECT id, schema FROM sub_entities WHERE entityId = ?');
+  subStmt.bind([entityId]);
+  const subEntities = [];
+  while (subStmt.step()) {
+    const row = subStmt.getAsObject();
+    try {
+      const schema = typeof row.schema === 'string' ? JSON.parse(row.schema) : row.schema;
+      subEntities.push({ id: row.id, schema });
+    } catch (e) {}
+  }
+  subStmt.free();
+
+  subEntities.forEach(({ id: subEntityId, schema }) => {
+    if (!Array.isArray(schema)) return;
+    const instStmt = db.prepare('SELECT data FROM instances WHERE subEntityId = ?');
+    instStmt.bind([subEntityId]);
+    while (instStmt.step()) {
+      const row = instStmt.getAsObject();
+      try {
+        const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+        if (data && typeof data === 'object') {
+          schema.forEach((field) => {
+            if ((field.type === 'image' || field.type === 'file') && data[field.name]) {
+              fileIds.push(data[field.name]);
+            }
+          });
+        }
+      } catch (e) {}
+    }
+    instStmt.free();
+  });
+
+  return fileIds;
+}
+
+/**
  * Count cascade impact for entity delete
- * Returns: { subEntities, instances }
+ * Returns: { subEntities, instances, files }
  */
 export function countCascadeImpact(db, entityId) {
   // Count sub-entities
@@ -104,18 +145,26 @@ export function countCascadeImpact(db, entityId) {
   const instanceCount = stmt.getAsObject().count;
   stmt.free();
 
+  const fileIds = getEntityFiles(db, entityId);
+
   return {
     subEntities: subEntityCount,
     instances: instanceCount,
+    files: fileIds.length,
   };
 }
 
 /**
- * Delete entity (cascades to sub-entities + instances)
+ * Delete entity (cascades to sub-entities + instances, and deletes associated files)
  */
 export function deleteEntity(db, id) {
+  const fileIds = getEntityFiles(db, id);
   const sql = 'DELETE FROM entities WHERE id = ?';
   db.run(sql, [id]);
+
+  if (fileIds.length > 0) {
+    deleteFiles(fileIds);
+  }
 }
 
 /**

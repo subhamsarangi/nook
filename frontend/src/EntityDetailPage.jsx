@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SchemaBuilder from './SchemaBuilder';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './EntityDetailPage.css';
 
 export default function EntityDetailPage({ entityId, onBack }) {
@@ -19,6 +20,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
   const [selectedSubEntityIds, setSelectedSubEntityIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkCascadeInfo, setBulkCascadeInfo] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
   const navigate = useNavigate();
@@ -104,19 +106,22 @@ export default function EntityDetailPage({ entityId, onBack }) {
   };
 
   const handleDeleteClick = async (id) => {
+    setDeleteConfirm(id);
+    setDeleting(true);
     try {
       const res = await fetch(`${apiUrl}/api/sub-entities/${id}/cascade-count`);
       const data = await res.json();
       setCascadeInfo(data);
-      setDeleteConfirm(id);
     } catch (err) {
       setError('Failed to load delete info: ' + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirm) return;
-
+    setDeleting(true);
     try {
       const res = await fetch(`${apiUrl}/api/sub-entities/${deleteConfirm}`, {
         method: 'DELETE',
@@ -127,11 +132,19 @@ export default function EntityDetailPage({ entityId, onBack }) {
         throw new Error(data.error);
       }
 
+      if (editingId === deleteConfirm) {
+        setEditingId(null);
+        setFormName('');
+        setFormDesc('');
+      }
+
       setDeleteConfirm(null);
       setCascadeInfo(null);
       await loadData();
     } catch (err) {
       setError('Delete failed: ' + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -179,7 +192,8 @@ export default function EntityDetailPage({ entityId, onBack }) {
 
   const handleBulkDeleteSubEntitiesClick = async () => {
     if (selectedSubEntityIds.size === 0) return;
-
+    setBulkDeleteConfirm(true);
+    setDeleting(true);
     try {
       // Load cascade info for all selected
       const cascadePromises = Array.from(selectedSubEntityIds).map((id) =>
@@ -187,15 +201,22 @@ export default function EntityDetailPage({ entityId, onBack }) {
       );
       const cascadeData = await Promise.all(cascadePromises);
       const totalInstances = cascadeData.reduce((sum, c) => sum + (c.instances || 0), 0);
+      const totalFiles = cascadeData.reduce((sum, c) => sum + (c.files || 0), 0);
 
-      setBulkCascadeInfo({ count: selectedSubEntityIds.size, instances: totalInstances });
-      setBulkDeleteConfirm(true);
+      setBulkCascadeInfo({
+        count: selectedSubEntityIds.size,
+        instances: totalInstances,
+        files: totalFiles,
+      });
     } catch (err) {
       setError('Failed to load delete info: ' + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleConfirmBulkDeleteSubEntities = async () => {
+    setDeleting(true);
     try {
       const res = await fetch(`${apiUrl}/api/bulk-delete-sub-entities`, {
         method: 'POST',
@@ -208,12 +229,20 @@ export default function EntityDetailPage({ entityId, onBack }) {
         throw new Error(data.error || 'Delete failed');
       }
 
+      if (editingId && selectedSubEntityIds.has(editingId)) {
+        setEditingId(null);
+        setFormName('');
+        setFormDesc('');
+      }
+
       setBulkDeleteConfirm(false);
       setBulkCascadeInfo(null);
       setSelectedSubEntityIds(new Set());
       await loadData();
     } catch (err) {
       setError('Bulk delete failed: ' + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -254,7 +283,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
         <div>
           <h1>{entity.name}</h1>
           <p className="breadcrumb">
-            <a onClick={() => navigate('/')}>← Back to Entities</a>
+            {!(editingId || showCreateForm) && <a onClick={() => navigate('/')}>← Back to Entities</a>}
           </p>
         </div>
         {!showCreateForm && !editingId && (
@@ -266,7 +295,7 @@ export default function EntityDetailPage({ entityId, onBack }) {
         )}
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {!deleteConfirm && !bulkDeleteConfirm && error && <div className="error-banner">{error}</div>}
 
       {/* Create/Edit Form */}
       {(showCreateForm || editingId) && (
@@ -317,44 +346,32 @@ export default function EntityDetailPage({ entityId, onBack }) {
       )}
 
       {/* Bulk delete confirmation */}
-      {bulkDeleteConfirm && bulkCascadeInfo && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Delete {bulkCascadeInfo.count} Sub-Entity(ies)?</h2>
-            <p>This will also delete {bulkCascadeInfo.instances} instance(s) and all associated files.</p>
-            <p className="warning">This action cannot be undone.</p>
-
-            <div className="modal-actions">
-              <button className="btn-danger" onClick={handleConfirmBulkDeleteSubEntities}>
-                Delete {bulkCascadeInfo.count} Sub-Entity(ies)
-              </button>
-              <button className="btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteDialog
+        isOpen={bulkDeleteConfirm}
+        itemType="Sub-Entity"
+        count={selectedSubEntityIds.size}
+        cascadeInfo={bulkCascadeInfo}
+        loading={deleting}
+        onConfirm={handleConfirmBulkDeleteSubEntities}
+        onCancel={() => {
+          setBulkDeleteConfirm(false);
+          setBulkCascadeInfo(null);
+        }}
+      />
 
       {/* Delete Confirmation */}
-      {deleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Delete Sub-Entity?</h2>
-            <p>This will also delete {cascadeInfo?.instances || 0} instance(s).</p>
-            <p className="warning">This action cannot be undone.</p>
-
-            <div className="modal-actions">
-              <button className="btn-danger" onClick={handleConfirmDelete}>
-                Delete
-              </button>
-              <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteDialog
+        isOpen={!!deleteConfirm}
+        itemType="Sub-Entity"
+        itemName={subEntities.find((s) => s.id === deleteConfirm)?.name}
+        cascadeInfo={cascadeInfo}
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setDeleteConfirm(null);
+          setCascadeInfo(null);
+        }}
+      />
 
       {/* Sub-Entity List */}
       {subEntities.length === 0 ? (

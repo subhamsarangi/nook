@@ -2,6 +2,7 @@
  * Sub-Entity CRUD operations
  * Scoped to a parent Entity. Enforces: ≥1 sub-entity per entity.
  */
+import { deleteFiles } from './fileStorage.js';
 
 /**
  * Generate ID
@@ -118,11 +119,55 @@ export function countInstancesForSubEntity(db, subEntityId) {
 }
 
 /**
- * Delete sub-entity (cascades to instances)
+ * Extract all file IDs for instances belonging to a sub-entity
+ */
+export function getSubEntityFiles(db, subEntityId) {
+  const fileIds = [];
+
+  const stmt = db.prepare('SELECT schema FROM sub_entities WHERE id = ?');
+  stmt.bind([subEntityId]);
+  let schema = null;
+  if (stmt.step()) {
+    const row = stmt.getAsObject();
+    try {
+      schema = typeof row.schema === 'string' ? JSON.parse(row.schema) : row.schema;
+    } catch (e) {}
+  }
+  stmt.free();
+
+  if (!Array.isArray(schema)) return fileIds;
+
+  const instStmt = db.prepare('SELECT data FROM instances WHERE subEntityId = ?');
+  instStmt.bind([subEntityId]);
+  while (instStmt.step()) {
+    const row = instStmt.getAsObject();
+    try {
+      const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      if (data && typeof data === 'object') {
+        schema.forEach((field) => {
+          if ((field.type === 'image' || field.type === 'file') && data[field.name]) {
+            fileIds.push(data[field.name]);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+  instStmt.free();
+
+  return fileIds;
+}
+
+/**
+ * Delete sub-entity (cascades to instances, and deletes associated files)
  */
 export function deleteSubEntity(db, id) {
+  const fileIds = getSubEntityFiles(db, id);
   const sql = 'DELETE FROM sub_entities WHERE id = ?';
   db.run(sql, [id]);
+
+  if (fileIds.length > 0) {
+    deleteFiles(fileIds);
+  }
 }
 
 /**
@@ -249,7 +294,8 @@ export async function handleCascadeCount(req, res, db) {
     }
 
     const instanceCount = countInstancesForSubEntity(db, id);
-    res.json({ instances: instanceCount });
+    const fileIds = getSubEntityFiles(db, id);
+    res.json({ instances: instanceCount, files: fileIds.length });
   } catch (err) {
     console.error('[sub-entities] cascade-count failed:', err.message);
     res.status(500).json({ error: 'Count failed' });

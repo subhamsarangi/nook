@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import './SessionHeader.css';
 
 export default function SessionHeader({ onLock, onSessionExpired }) {
   const [remainingMs, setRemainingMs] = useState(null);
   const [locked, setLocked] = useState(false);
+  const [showSweepConfirm, setShowSweepConfirm] = useState(false);
+  const [orphanCount, setOrphanCount] = useState(0);
+  const [sweeping, setSweeping] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -63,6 +68,53 @@ export default function SessionHeader({ onLock, onSessionExpired }) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage('');
+    }, 3500);
+  };
+
+  const handleCheckOrphans = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/files/orphans`);
+      if (!res.ok) {
+        throw new Error('Failed to check orphan files');
+      }
+      const data = await res.json();
+      if (data.orphanCount === 0) {
+        showToast('✨ Vault storage is clean! No orphaned files found.');
+      } else {
+        setOrphanCount(data.orphanCount);
+        setShowSweepConfirm(true);
+      }
+    } catch (err) {
+      console.error('[orphan check] failed:', err);
+      showToast('❌ Failed to check orphan files: ' + err.message);
+    }
+  };
+
+  const handleConfirmSweep = async () => {
+    setSweeping(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/files/sweep-orphans`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to sweep files');
+      }
+      const data = await res.json();
+      setShowSweepConfirm(false);
+      showToast(`🧹 ${data.message || `Cleaned up ${orphanCount} orphaned file(s)`}`);
+    } catch (err) {
+      console.error('[sweep] failed:', err);
+      showToast('❌ Sweep failed: ' + err.message);
+    } finally {
+      setSweeping(false);
+    }
+  };
+
   const handleLock = async () => {
     try {
       await fetch(`${apiUrl}/api/lock`, {
@@ -95,11 +147,32 @@ export default function SessionHeader({ onLock, onSessionExpired }) {
         </div>
 
         <div className="session-actions">
+          <button
+            className="sweep-btn"
+            onClick={handleCheckOrphans}
+            title="Check and purge unreferenced encrypted files"
+          >
+            🧹 Sweep Orphans
+          </button>
           <button className="lock-btn" onClick={handleLock}>
             Lock
           </button>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        isOpen={showSweepConfirm}
+        title={`Purge ${orphanCount} Orphaned File${orphanCount === 1 ? '' : 's'}?`}
+        itemType="Orphan File"
+        count={orphanCount}
+        warningText="These files have no references in your database and will be permanently deleted from disk."
+        confirmText={`Sweep ${orphanCount} File${orphanCount === 1 ? '' : 's'}`}
+        loading={sweeping}
+        onConfirm={handleConfirmSweep}
+        onCancel={() => setShowSweepConfirm(false)}
+      />
+
+      {toastMessage && <div className="status-toast">{toastMessage}</div>}
     </div>
   );
 }

@@ -180,3 +180,72 @@ export function getOrphanedFileIds(usedFileIds) {
 export function deleteFiles(fileIds) {
   fileIds.forEach((id) => deleteEncryptedFile(id));
 }
+
+/**
+ * Find all file IDs referenced by any instance in the database
+ */
+export function getAllReferencedFileIds(db) {
+  const usedFileIds = new Set();
+
+  // 1. Get all schemas for sub-entities
+  const schemaMap = new Map();
+  const schemaStmt = db.prepare('SELECT id, schema FROM sub_entities');
+  while (schemaStmt.step()) {
+    const row = schemaStmt.getAsObject();
+    try {
+      const schema = typeof row.schema === 'string' ? JSON.parse(row.schema) : row.schema;
+      if (Array.isArray(schema)) {
+        schemaMap.set(row.id, schema);
+      }
+    } catch (e) {}
+  }
+  schemaStmt.free();
+
+  // 2. Scan all instances
+  const instStmt = db.prepare('SELECT subEntityId, data FROM instances');
+  while (instStmt.step()) {
+    const row = instStmt.getAsObject();
+    try {
+      const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      const schema = schemaMap.get(row.subEntityId);
+      if (Array.isArray(schema) && data && typeof data === 'object') {
+        schema.forEach((field) => {
+          if ((field.type === 'image' || field.type === 'file') && data[field.name]) {
+            usedFileIds.add(data[field.name]);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+  instStmt.free();
+
+  return Array.from(usedFileIds);
+}
+
+/**
+ * Sweep orphaned files from disk
+ */
+export function sweepOrphanFiles(db) {
+  const referencedFileIds = getAllReferencedFileIds(db);
+  const orphanedIds = getOrphanedFileIds(referencedFileIds);
+
+  deleteFiles(orphanedIds);
+
+  return {
+    deletedCount: orphanedIds.length,
+    deletedFileIds: orphanedIds,
+  };
+}
+
+/**
+ * Get orphan status (count and file IDs) without deleting
+ */
+export function getOrphanStatus(db) {
+  const referencedFileIds = getAllReferencedFileIds(db);
+  const orphanedIds = getOrphanedFileIds(referencedFileIds);
+
+  return {
+    orphanCount: orphanedIds.length,
+    orphanedFileIds: orphanedIds,
+  };
+}
