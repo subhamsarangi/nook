@@ -15,24 +15,13 @@
 
 ## Project Goal
 
-Nook is a general-purpose, self-hosted, encrypted local system for organizing
-personal data into flexible, user-defined structures — without relying on any
+Nook is a general-purpose, self-hosted, encrypted local system for organizing personal data into flexible, user-defined structures — without relying on any
 third-party service, cloud storage, or account system.
 
-The core idea: the user defines their own categories (**Entities**), each
-category has one or more sub-categories (**Sub-Entities**) with a
-user-designed record structure (**schema**), and each sub-category holds
-actual records (**Instances**) conforming to that structure. Think of it as a
-lightweight, self-built Airtable/Notion-style database — but fully local,
-encrypted at rest, and with no data ever leaving the machine.
+The core idea: the user defines their own categories (**Entities**), each category has one or more sub-categories (**Sub-Entities**) with a user-designed record structure (**schema**), and each sub-category holds actual records (**Instances**) conforming to that structure. Think of it as a lightweight, self-built Airtable/Notion-style database — but fully local, encrypted at rest, and with no data ever leaving the machine.
 
-The secondary and equally important goal is **security by construction**: the
-SQLite database and all uploaded files are encrypted, a single password
-(never stored anywhere) is the only way to unlock them, the session
-auto-locks after inactivity, and there is deliberately **no password
-recovery mechanism** — forgetting the password means permanent data loss, by
-design, in exchange for a smaller attack surface and no secondary
-recovery-key system to secure.
+The secondary and equally important goal is **security by construction**: the SQLite database and all uploaded files are encrypted, a single password
+(never stored anywhere) is the only way to unlock them, the session auto-locks after inactivity, and there is deliberately **no password recovery mechanism** — forgetting the password means permanent data loss, by design, in exchange for a smaller attack surface and no secondary recovery-key system to secure.
 
 ---
 

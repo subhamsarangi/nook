@@ -160,11 +160,11 @@ Note: all three are independent of each other — can build in any order once th
 
 ## Phase 12 — Polish & Hardening
 
-- [ ] 12.1 ~~Rate-limit / delay failed password attempts~~ → done in 2.10–2.11 (moved earlier since it needed to be persisted, not bolted on)
+- [x] 12.1 ~~Rate-limit / delay failed password attempts~~ → done in 2.10–2.11 (moved earlier since it needed to be persisted, not bolted on)
 - [ ] 12.2 Empty / loading / error states across all pages
 - [ ] 12.3 Audit all logging (request logging middleware, error handlers, console.log calls) — confirm the password/key is never written to any log, especially the unlock endpoint. Log outcomes only ("unlock succeeded/failed"), never payloads.
 - [ ] 12.4 Confirm unlock endpoint only ever accepts password via POST body — never query string/URL (avoids it landing in access logs or browser history)
-- [ ] 12.5 Disable core dumps for the server process (or otherwise confirm crash dumps won't persist key/password material to disk)
+- [x] 12.5 Disable core dumps for the server process (or otherwise confirm crash dumps won't persist key/password material to disk)
 - [ ] 12.6 Final security review: confirm no plaintext secrets ever hit disk, logs, or crash dumps; walk through the full key lifecycle end-to-end (creation → derivation → in-memory use → zeroing → drop)
 
 **Depends on:** 2.7 (for 12.5–12.6, key lifecycle must exist); 12.2 can be layered in incrementally at any point, anytime after a page exists; 12.3–12.4 can be done as soon as 3.1's unlock endpoint exists; 12.6 is inherently last — a review pass over everything
